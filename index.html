@@ -1,0 +1,4062 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Go Postal – Liège City | Commandes & Dispatch</title>
+<style>
+
+  /* ============================================================
+     GO POSTAL — REFONTE D'INTERFACE
+     Noir · Blanc · Orange · Bleu
+
+     Règles du système :
+       blanc  = où je suis / ce qui est sélectionné
+       orange = ce que je peux faire (actions principales)
+       bleu   = information, zones, liens, Discord
+     Les noms de classes et de variables sont conservés à l'identique :
+     le HTML et le script existants n'ont pas été modifiés.
+     ============================================================ */
+  @import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&display=swap");
+  @import url("https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap");
+
+  :root {
+    --bg: #050506;
+    --panel: #0b0b0d;
+    --panel-2: #111114;
+    --panel-3: #18181c;
+    --border: rgba(255,255,255,.07);
+    --border-strong: rgba(255,255,255,.15);
+    --text: #fafafa;
+    --muted: #8d8d96;
+    --accent: #ff7a1a;     /* orange : actions */
+    --accent-2: #ffa24d;   /* orange clair */
+    --price: #ffffff;      /* blanc : prix / terminé */
+    --warn: #ffc48a;       /* orange pâle : en attente */
+    --danger: #ff6b6b;     /* erreurs / annulation */
+    --sell: #3d8bff;      /* bleu : info / livraison */
+    --teal: #9cc8ff;       /* bleu clair : livrée */
+    --purple: #8ab4ff;
+    --radius: 20px;
+    --shadow: 0 18px 50px -18px rgba(0,0,0,.8);
+    --display: "Bricolage Grotesque", "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --body: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --ease-out: cubic-bezier(.22,.8,.3,1);
+    --ease-spring: cubic-bezier(.3,1.35,.45,1);
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  html { scroll-behavior: smooth; scroll-padding-top: 110px; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  h1, h2, h3 { font-family: var(--display); letter-spacing: -.025em; font-weight: 700; }
+  b, strong { font-weight: 650; }
+  ::selection { background: var(--accent); color: #0a0500; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #232328; border-radius: 10px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-track { background: transparent; }
+  :focus-visible { outline: 2px solid var(--sell); outline-offset: 3px; }
+
+  /* ---------- Formulaires ---------- */
+  input, select, textarea {
+    background: rgba(255,255,255,.035);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: .92rem;
+    outline: none;
+    font-family: inherit;
+    transition: border-color .2s, box-shadow .25s, background .2s;
+  }
+  input::placeholder, textarea::placeholder { color: #5b5b64; }
+  input:hover, select:hover, textarea:hover { border-color: var(--border-strong); }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    background: rgba(255,255,255,.055);
+    box-shadow: 0 0 0 4px rgba(255,122,26,.14);
+  }
+  select {
+    appearance: none; -webkit-appearance: none;
+    padding-right: 38px !important;
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='M1 1.5 6 6.5l5-5' stroke='%238d8d96' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  select option, select optgroup { background: #111114; color: var(--text); }
+  input:disabled, select:disabled { opacity: .5; cursor: not-allowed; }
+  input[type=checkbox] { width: auto; accent-color: var(--accent); }
+  textarea { line-height: 1.5; }
+
+  /* ============================================================
+     EN-TÊTE : capsule flottante
+     ============================================================ */
+  header {
+    position: sticky;
+    top: 12px;
+    z-index: 30;
+    margin: 12px 16px 0;
+    padding: 10px 14px 10px 16px;
+    background: rgba(10,10,12,.74);
+    backdrop-filter: blur(20px) saturate(150%);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px -24px rgba(0,0,0,.9);
+  }
+  .topbar {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "brand nav user";
+    align-items: center;
+    gap: 12px 20px;
+    width: 100%;
+    margin: 0;
+  }
+  .topbar > * { min-width: 0; }
+  .topbar .brand   { grid-area: brand; }
+  .topbar #mainnav { grid-area: nav; justify-self: center; }
+  .topbar .userbar { grid-area: user; justify-self: end; flex-wrap: nowrap; }
+  @media (max-width: 1700px) {
+    .topbar { grid-template-columns: 1fr auto; grid-template-areas: "brand user" "nav nav"; gap: 10px 20px; }
+    .topbar #mainnav { justify-self: stretch; }
+  }
+
+  @media (max-width: 640px) {
+    .topbar { grid-template-columns: auto minmax(0, 1fr); }
+    .topbar .userbar { flex-wrap: wrap; justify-content: flex-end; }
+    #sync { display: none; }
+  }
+  .brand {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    color: var(--text);
+    text-decoration: none;
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.12rem;
+    letter-spacing: -.03em;
+    white-space: nowrap;
+  }
+  .brand small { color: var(--muted); font-family: var(--body); font-weight: 500; font-size: .8rem; letter-spacing: 0; }
+  .logo {
+    position: relative;
+    align-self: center;
+    width: 36px; height: 36px;
+    display: grid; place-items: center;
+    font-size: 1.1rem;
+    border-radius: 12px;
+    background: var(--accent);
+    transition: transform .35s var(--ease-spring);
+  }
+  .logo::after {
+    content: ""; position: absolute; top: -3px; right: -3px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--sell); border: 2px solid #0a0a0c;
+  }
+  .brand:hover .logo { transform: rotate(-8deg) scale(1.08); }
+  .brand:active .logo { transform: scale(.92); }
+
+  #mainnav {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+  }
+  #mainnav a {
+    flex: none;
+    position: relative; z-index: 1; overflow: hidden;
+    color: var(--muted);
+    text-decoration: none;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: .84rem;
+    font-weight: 560;
+    white-space: nowrap;
+    transition: color .25s, background-color .25s, transform .25s var(--ease-spring);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #mainnav a:hover { color: var(--text); }
+  #mainnav a:active { transform: scale(.94); }
+  #mainnav a.active { background: #fff; color: #050506; }                 /* repli sans script */
+  #mainnav.has-ind a.active { background: transparent; color: #050506; } /* le curseur coulissant prend le relais */
+  #mainnav a.discord { background: var(--sell); color: #031024; font-weight: 650; margin-left: 4px; }
+  #mainnav a.discord:hover { background: #5c9fff; color: #031024; }
+  @media (max-width: 1100px) {
+    #mainnav { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+    #mainnav::-webkit-scrollbar { display: none; }
+  }
+
+  .slide-ind {
+    position: absolute; left: 0; top: 0; z-index: 0;
+    border-radius: 999px;
+    background: #fff;
+    pointer-events: none;
+    opacity: 0;
+    transition: transform .5s var(--ease-spring), width .5s var(--ease-spring), height .3s, opacity .25s;
+  }
+  .slide-ind.no-anim { transition: none; }
+
+  .userbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  #sync { font-size: .75rem; color: var(--muted); }
+  #sync.on { color: var(--sell); }
+  #sync.off { color: var(--danger); font-weight: 700; }
+  .userbar:not(:has(.role-recrue, .role-employe, .role-manager, .role-copatron, .role-patron)) #sync { display: none; }
+
+  /* Badges de rôles */
+  .role-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: .74rem;
+    font-weight: 650;
+    letter-spacing: .01em;
+  }
+  .role-pending  { background: rgba(255,196,138,.10); color: var(--warn);   border: 1px solid rgba(255,196,138,.32); }
+  .role-client   { background: rgba(61,139,255,.12);  color: var(--teal);   border: 1px solid rgba(61,139,255,.35); }
+  .role-recrue   { background: rgba(255,255,255,.06); color: #d2d2d8;       border: 1px solid rgba(255,255,255,.16); }
+  .role-employe  { background: rgba(255,255,255,.12); color: #fff;          border: 1px solid rgba(255,255,255,.3); }
+  .role-manager  { background: rgba(255,122,26,.13);  color: var(--accent-2); border: 1px solid rgba(255,122,26,.4); }
+  .role-copatron { background: rgba(61,139,255,.14);  color: var(--teal);   border: 1px solid rgba(61,139,255,.42); }
+  .role-patron   { background: #fff; color: #050506; border: 1px solid #fff; }
+
+  /* Onglets & barre d'outils du catalogue (dans la capsule) */
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding-top: 10px; border-top: 1px solid var(--border); }
+  .tab {
+    position: relative; overflow: hidden;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px 14px;
+    cursor: pointer;
+    font-size: .84rem;
+    font-weight: 540;
+    font-family: inherit;
+    transition: color .2s, background-color .25s, border-color .2s, transform .25s var(--ease-spring);
+  }
+  .tab:hover { color: var(--text); border-color: var(--border-strong); }
+  .tab:active { transform: scale(.94); }
+  .tab.active { background: #fff; color: #050506; border-color: #fff; font-weight: 650; }
+  .tab .n { opacity: .55; margin-left: 7px; font-size: .74rem; font-variant-numeric: tabular-nums; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0 0; }
+  #search { flex: 1 1 260px; min-width: 200px; }
+  .toolbar select { flex: 0 1 220px; }
+
+  /* ============================================================
+     BOUTONS
+     ============================================================ */
+  .btn {
+    position: relative; overflow: hidden; isolation: isolate;
+    border: 0;
+    border-radius: 14px;
+    padding: 12px 20px;
+    font-size: .92rem;
+    font-weight: 620;
+    letter-spacing: -.005em;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform .3s var(--ease-spring), background-color .2s, color .2s, border-color .2s, box-shadow .3s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:active:not(:disabled) { transform: scale(.95); }
+  .btn.primary {
+    background: var(--accent);
+    color: #130800;
+    box-shadow: 0 10px 26px -12px rgba(255,122,26,.7);
+  }
+  .btn.primary::before {          /* reflet qui traverse le bouton au survol */
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,.38) 50%, transparent 70%);
+    transform: translateX(-130%);
+    transition: transform .7s var(--ease-out);
+  }
+  .btn.primary:hover:not(:disabled) { background: #ff8b36; box-shadow: 0 14px 34px -10px rgba(255,122,26,.85); }
+  .btn.primary:hover:not(:disabled)::before { transform: translateX(130%); }
+  .btn.primary:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+  .btn.success { background: #fff; color: #050506; }
+  .btn.success:hover { background: #e4e4e8; }
+  .btn.ghost {
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: #cfcfd6;
+    padding: 9px 14px;
+    font-size: .83rem;
+    font-weight: 560;
+  }
+  .btn.ghost:hover { color: #fff; border-color: rgba(255,255,255,.55); background: rgba(255,255,255,.06); }
+  .btn.danger-outline:hover { color: var(--danger); border-color: var(--danger); background: rgba(255,107,107,.07); }
+  .btn.sm { padding: 6px 12px; font-size: .78rem; border-radius: 10px; }
+  .btn.ghost2 { background: rgba(61,139,255,.12); color: var(--teal); border: 1px solid rgba(61,139,255,.38); }
+  .btn.ghost2:hover { background: var(--sell); color: #031024; border-color: var(--sell); }
+
+  /* Chargement : un anneau tourne dans le bouton pendant l'envoi */
+  body.busy .stbtn, body.busy .btn.primary { pointer-events: none; opacity: .7; }
+  body.busy #send::after, body.busy .btn.primary[type=submit]::after {
+    content: ""; width: 14px; height: 14px; flex: none;
+    border: 2px solid rgba(19,8,0,.25); border-top-color: #130800; border-radius: 50%;
+    animation: gpSpin .7s linear infinite;
+  }
+  @keyframes gpSpin { to { transform: rotate(360deg); } }
+
+  /* Confirmation : onde bleue quand la commande est partie */
+  .btn.sent { animation: gpSent 1.1s var(--ease-out); }
+  @keyframes gpSent {
+    0%   { box-shadow: 0 0 0 0 rgba(61,139,255,.7); }
+    100% { box-shadow: 0 0 0 22px rgba(61,139,255,0); }
+  }
+
+  /* Onde au clic (créée par le script, couleur = couleur du texte du bouton) */
+  .ripple {
+    position: absolute; z-index: 0;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: .22;
+    pointer-events: none;
+    transform: scale(0);
+    animation: gpRipple .65s var(--ease-out) forwards;
+  }
+  @keyframes gpRipple { to { transform: scale(1); opacity: 0; } }
+
+  /* ============================================================
+     ACCUEIL & HIÉRARCHIE
+     ============================================================ */
+  .hero { position: relative; isolation: isolate; max-width: 1100px; margin: 0 auto; padding: 110px 28px 56px; text-align: left; }
+  .hero.small { max-width: 920px; padding: 64px 24px 12px; }
+  #page-hierarchie .hero.small { text-align: center; }
+  #page-hierarchie .hero.small p { margin-left: auto; margin-right: auto; }
+  .hero h1 {
+    font-size: clamp(2.6rem, 8.2vw, 5.8rem);
+    margin: 22px 0 20px;
+    line-height: .98;
+    letter-spacing: -.05em;
+    font-weight: 700;
+    text-wrap: balance;
+  }
+  .hero.small h1 { font-size: clamp(1.8rem, 4.4vw, 2.7rem); line-height: 1.08; letter-spacing: -.035em; margin: 0 0 12px; }
+  .hero h1 span { background: none; color: inherit; -webkit-text-fill-color: currentColor; }
+  .hero p { color: var(--muted); font-size: 1.1rem; max-width: 52ch; margin: 0 0 34px; }
+  .hero.small p { margin-bottom: 20px; font-size: 1rem; }
+  .pill {
+    display: inline-block;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--muted);
+    border-radius: 999px;
+    padding: 5px 14px;
+    font-size: .8rem;
+    font-weight: 560;
+  }
+  .cta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start; }
+  .cta .btn { padding: 15px 26px; font-size: 1rem; border-radius: 16px; }
+  .stats-line { margin-top: 40px; color: var(--muted); font-size: .88rem; font-variant-numeric: tabular-nums; }
+
+  /* La seule animation « décor » : un trajet de livraison qui se dessine une fois */
+  #page-accueil .hero::before {
+    content: ""; position: absolute; inset: 0; z-index: -1;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 720 520'%3E%3Cstyle%3E.base%7Bfill:none;stroke:rgba(255,255,255,.13);stroke-width:2;stroke-dasharray:2 10;stroke-linecap:round%7D.run%7Bfill:none;stroke:%23ff7a1a;stroke-width:3;stroke-dasharray:1 2;stroke-dashoffset:1;animation:d 3s .5s cubic-bezier(.65,0,.35,1) forwards%7D.st%7Bfill:%23fff;opacity:.9%7D.pin%7Bfill:%233d8bff;opacity:0;animation:o .4s 3.3s forwards%7D.ring%7Bfill:none;stroke:%233d8bff;stroke-width:2;transform-box:fill-box;transform-origin:center;opacity:0;animation:p 1.7s 3.4s ease-out 3%7D%40keyframes d%7Bto%7Bstroke-dashoffset:0%7D%7D%40keyframes o%7Bto%7Bopacity:1%7D%7D%40keyframes p%7B0%25%7Btransform:scale(1);opacity:.9%7D100%25%7Btransform:scale(4.5);opacity:0%7D%7D%3C/style%3E%3Cpath class='base' d='M30,470 C150,470 160,300 300,320 S470,470 560,330 S620,120 690,90'/%3E%3Cpath class='run' pathLength='1' d='M30,470 C150,470 160,300 300,320 S470,470 560,330 S620,120 690,90'/%3E%3Ccircle class='st' cx='30' cy='470' r='5'/%3E%3Ccircle class='ring' cx='690' cy='90' r='7'/%3E%3Ccircle class='pin' cx='690' cy='90' r='7'/%3E%3C/svg%3E") no-repeat right 12px center / min(740px, 78%) auto;
+    pointer-events: none;
+  }
+  @media (max-width: 760px) { #page-accueil .hero::before { opacity: .45; background-size: 120% auto; } }
+
+  .steps-grid {
+    max-width: 1100px;
+    margin: 16px auto 80px;
+    padding: 0 28px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 0 44px;
+  }
+  .step-card {
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--border-strong);
+    border-radius: 0;
+    padding: 26px 0 30px;
+  }
+  .step-card h3 { margin: 16px 0 8px; font-size: 1.15rem; }
+  .step-card p { margin: 0; color: var(--muted); font-size: .92rem; max-width: 36ch; }
+  .sn {
+    font-family: var(--display);
+    font-size: 2.3rem; font-weight: 700; line-height: 1; letter-spacing: -.04em;
+    color: #3a3a42;
+    transition: color .4s, transform .5s var(--ease-spring);
+    transform-origin: left center;
+  }
+  .step-card:hover .sn { color: var(--accent); transform: translateX(4px); }
+
+  .staff { max-width: 960px; margin: 0 auto; padding: 24px 24px 90px; }
+  .level { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .vline { width: 1px; height: 36px; background: var(--border-strong); margin: 0 auto; }
+  .member {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 30px;
+    min-width: 230px;
+    text-align: center;
+    transition: transform .4s var(--ease-spring), border-color .25s;
+  }
+  .member:hover { transform: translateY(-4px); border-color: rgba(61,139,255,.5); }
+  .avatar {
+    width: 68px; height: 68px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-family: var(--display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--panel-3);
+    border: 1px solid var(--border-strong);
+    transition: background-color .3s, color .3s, border-color .3s;
+  }
+  .member:hover .avatar { background: #fff; color: #050506; border-color: #fff; }
+  .mname { font-family: var(--display); font-size: 1.12rem; font-weight: 650; letter-spacing: -.02em; }
+  .mrole { margin-top: 10px; }
+
+  /* ============================================================
+     CATALOGUE & PANIER
+     ============================================================ */
+  .layout-cat {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 32px;
+    padding: 28px 28px 40px;
+    max-width: 1500px;
+    margin: 0 auto;
+    align-items: start;
+  }
+  @media (max-width: 980px) { .layout-cat { grid-template-columns: 1fr; padding: 16px; } }
+
+  .banner {
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 4px 0 20px;
+    margin-bottom: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 22px;
+    align-items: baseline;
+  }
+  .banner .t { font-family: var(--display); font-size: 1.7rem; font-weight: 700; letter-spacing: -.035em; }
+  .banner .z { color: var(--sell); font-weight: 600; }
+  .banner .d { color: var(--muted); font-size: .9rem; }
+  .flag { color: var(--warn); font-size: .8rem; font-weight: 600; }
+
+  #count, #overviewCount { color: var(--muted); font-size: .85rem; margin-bottom: 14px; }
+  h2.sec { font-size: 1rem; margin: 32px 0 14px; color: #fff; font-weight: 650; display: flex; align-items: center; gap: 12px; }
+  h2.sec::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  h2.sec span { color: var(--muted); font-weight: 500; font-size: .8rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    transition: transform .4s var(--ease-spring), border-color .25s, background-color .25s, box-shadow .35s;
+  }
+  .card:hover { border-color: var(--border-strong); background: var(--panel-2); }
+  .card.in-cart { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, 0 16px 40px -24px rgba(255,122,26,.55); }
+  .card .name { font-weight: 600; font-size: .95rem; word-break: break-word; line-height: 1.3; }
+  .card .cat { color: var(--muted); font-size: .76rem; }
+  .card .row { display: flex; justify-content: space-between; align-items: baseline; font-size: .85rem; }
+  .card .row span:first-child { color: var(--muted); }
+  .card .note { color: var(--warn); font-size: .76rem; }
+  .w     { color: #cbcbd2; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .price { color: #fff; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .none  { color: var(--muted); }
+
+  .thumb {
+    height: 72px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    font-size: 2.1rem;
+    background: rgba(255,255,255,.035);
+    border: 1px solid var(--border);
+    transition: transform .4s var(--ease-spring);
+  }
+  .card:hover .thumb { transform: scale(1.04); }
+
+  .qtybox {
+    display: flex; gap: 2px; align-items: center; margin-top: 4px;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: rgba(255,255,255,.03);
+  }
+  .qtybox button {
+    position: relative; overflow: hidden;
+    flex: none;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 0;
+    background: rgba(255,255,255,.07);
+    color: var(--text);
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color .2s, color .2s, transform .3s var(--ease-spring);
+  }
+  .qtybox button:hover { background: var(--accent); color: #130800; }
+  .qtybox button:active { transform: scale(.82); }
+  .qtybox input.qty, .qtybox input.qty:hover, .qtybox input.qty:focus {
+    width: 100%; min-width: 0; text-align: center; padding: 6px 2px;
+    background: transparent; border: 0; box-shadow: none; font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+  .qtybox input.qty::-webkit-inner-spin-button { display: none; }
+
+  .pt { cursor: pointer; }
+  .pt:hover { border-color: rgba(255,122,26,.55); }
+  .pt .num { font-family: var(--display); font-size: 1.35rem; font-weight: 700; color: var(--accent); letter-spacing: -.03em; }
+  .pt .zone { color: var(--sell); font-weight: 600; font-size: .86rem; }
+  .pt .detail { color: var(--muted); font-size: .82rem; }
+  .pt .nom { font-family: var(--display); font-size: 1.12rem; font-weight: 650; letter-spacing: -.02em; }
+  .pt:active { transform: scale(.97); }
+
+  .empty { text-align: center; color: var(--muted); padding: 64px 0; }
+
+  #order {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 22px;
+    position: sticky;
+    top: 236px;
+    max-height: calc(100vh - 252px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    box-shadow: var(--shadow);
+  }
+  @media (min-width: 1701px) { #order { top: 198px; max-height: calc(100vh - 214px); } }
+  @media (max-width: 980px) { #order { position: static; max-height: none; } }
+  #order h2 { margin: 0; font-size: 1.25rem; }
+  #order label { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 560; }
+  #order input, #order textarea, #order select { width: 100%; }
+  #order textarea { resize: vertical; min-height: 64px; }
+  .req { color: var(--accent); }
+
+  .rule-box {
+    background: rgba(255,122,26,.07);
+    border: 1px solid rgba(255,122,26,.3);
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: .83rem;
+    color: var(--text);
+  }
+  .rule-box.invalid { background: rgba(255,107,107,.07); border-color: rgba(255,107,107,.35); }
+  .rule-box.valid   { background: rgba(61,139,255,.08);  border-color: rgba(61,139,255,.4); }
+
+  #orderLines { display: flex; flex-direction: column; }
+  .line {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 10px;
+    align-items: center;
+    background: none;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 10px 0;
+    font-size: .85rem;
+  }
+  .line .ln { font-weight: 600; word-break: break-word; }
+  .line .lp { color: #fff; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .line .ld { color: var(--muted); font-size: .76rem; }
+  .line .lx { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .76rem; text-align: right; padding: 0; font-family: inherit; transition: color .2s; }
+  .line .lx:hover { color: var(--danger); }
+  .group-title { color: var(--muted); font-size: .78rem; font-weight: 650; margin: 10px 0 2px; }
+  .no-lines { color: var(--muted); font-size: .87rem; text-align: center; padding: 22px 0; border: 1px dashed var(--border-strong); border-radius: 14px; }
+
+  .total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 1rem;
+    font-weight: 600;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .total .amount { font-family: var(--display); color: #fff; font-size: 1.9rem; font-weight: 700; letter-spacing: -.04em; font-variant-numeric: tabular-nums; display: inline-block; }
+  .sub { color: var(--muted); font-size: .82rem; display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; }
+
+  /* Le total « tressaute » quand il change */
+  .bump { animation: gpBump .45s var(--ease-spring); }
+  @keyframes gpBump {
+    0%   { transform: scale(1); }
+    35%  { transform: scale(1.14); color: var(--accent); }
+    100% { transform: scale(1); }
+  }
+
+  #status { font-size: .87rem; padding: 12px 14px; border-radius: 14px; }
+  #status.ok  { background: rgba(61,139,255,.10); color: var(--teal); border: 1px solid rgba(61,139,255,.4); }
+  #status.err { background: rgba(255,107,107,.10); color: var(--danger); border: 1px solid rgba(255,107,107,.4); }
+
+  #fab {
+    position: fixed;
+    right: 16px; bottom: 16px;
+    z-index: 25;
+    display: none;
+    overflow: hidden;
+    background: var(--accent);
+    color: #130800;
+    border: 0;
+    border-radius: 999px;
+    padding: 14px 22px;
+    font-weight: 700;
+    font-family: inherit;
+    box-shadow: 0 16px 36px -10px rgba(255,122,26,.7);
+    cursor: pointer;
+    transition: transform .3s var(--ease-spring);
+  }
+  #fab:active { transform: scale(.92); }
+  @media (max-width: 980px) { #fab.show { display: block; animation: gpFabIn .5s var(--ease-spring); } }
+  @keyframes gpFabIn { from { opacity: 0; transform: translateY(24px) scale(.8); } to { opacity: 1; transform: none; } }
+
+  /* ============================================================
+     AUTHENTIFICATION
+     ============================================================ */
+  .auth-wrap {
+    max-width: 920px;
+    margin: 20px auto;
+    padding: 0 24px 80px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 820px) { .auth-wrap { grid-template-columns: 1fr; } }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .panel h2 { margin: 0 0 4px; font-size: 1.2rem; }
+  .panel label.l { display: block; font-size: .8rem; color: var(--muted); margin-bottom: 6px; font-weight: 560; }
+  .panel input, .panel select, .panel textarea { width: 100%; }
+
+  .lock-notice {
+    max-width: 872px;
+    margin: 20px auto 0;
+    padding: 16px 22px;
+    border-radius: 18px;
+    background: rgba(255,122,26,.07);
+    border: 1px solid rgba(255,122,26,.4);
+    color: var(--accent-2);
+    text-align: left;
+    font-weight: 560;
+  }
+
+  /* ============================================================
+     DISPATCH (TABLEAU, KANBAN, CARTES)
+     ============================================================ */
+  .dispatch-wrap { max-width: 1500px; margin: 0 auto; padding: 28px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+  .chip {
+    position: relative; overflow: hidden;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: .83rem;
+    font-weight: 540;
+    cursor: pointer;
+    transition: color .2s, background-color .25s, border-color .2s, transform .3s var(--ease-spring);
+    font-family: inherit;
+  }
+  .chip:hover { color: var(--text); border-color: var(--c, var(--border-strong)); }
+  .chip:active { transform: scale(.93); }
+  .chip.active { background: var(--c, #fff); border-color: var(--c, #fff); color: #050506; font-weight: 700; }
+  .chip .n { opacity: .65; margin-left: 7px; font-size: .75rem; font-variant-numeric: tabular-nums; }
+
+  .dispatch-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; align-items: center; }
+  .dispatch-bar input { flex: 1 1 240px; }
+  .dispatch-bar select { flex: 0 1 220px; }
+
+  .view-switch {
+    position: relative;
+    display: inline-flex;
+    background: rgba(255,255,255,.03);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .view-switch button {
+    position: relative; z-index: 1; overflow: hidden;
+    background: transparent;
+    color: var(--muted);
+    border: 0;
+    border-radius: 999px;
+    padding: 7px 14px;
+    font-size: .83rem;
+    font-weight: 580;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .25s, background-color .25s, transform .3s var(--ease-spring);
+  }
+  .view-switch button:hover { color: #fff; }
+  .view-switch button:active { transform: scale(.93); }
+  .view-switch button.active { background: #fff; color: #050506; font-weight: 700; }
+  .view-switch.has-ind button.active { background: transparent; }
+
+  .table-wrap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    overflow-x: auto;
+  }
+  table.dispatch-table { width: 100%; border-collapse: collapse; font-size: .87rem; min-width: 900px; }
+  table.dispatch-table th, table.dispatch-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  table.dispatch-table tr:last-child td { border-bottom: 0; }
+  table.dispatch-table th { color: var(--muted); font-size: .78rem; font-weight: 600; background: rgba(255,255,255,.02); white-space: nowrap; }
+  table.dispatch-table td { font-variant-numeric: tabular-nums; }
+  table.dispatch-table tr { transition: background-color .2s; }
+  table.dispatch-table tbody tr:hover td { background: rgba(255,255,255,.028); }
+  .td-content { max-width: 340px; white-space: pre-wrap; word-break: break-word; font-size: .83rem; color: #c9c9d0; }
+
+  .kanban-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 12px; align-items: start; }
+  .kanban-col {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 240px;
+  }
+  .kanban-head { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-weight: 650; font-size: .95rem; letter-spacing: -.01em; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .kanban-head::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--accent)); box-shadow: 0 0 0 4px rgba(255,255,255,.06); flex: none; }
+  .kanban-head > :last-child { margin-left: auto; }
+  .kanban-card {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    box-shadow: inset 2px 0 0 var(--c, var(--accent));
+    border-radius: 14px;
+    padding: 13px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: .84rem;
+    transition: border-color .2s, transform .35s var(--ease-spring);
+  }
+  .kanban-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+
+  .orders-list { display: flex; flex-direction: column; gap: 12px; }
+  .order-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    box-shadow: inset 3px 0 0 var(--c, var(--accent));
+    border-radius: 22px;
+    padding: 18px 20px 18px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color .2s;
+  }
+  .order-card:hover { border-color: var(--border-strong); }
+  .order-card.cancelled { opacity: .6; }
+  .o-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+  .o-num { font-family: var(--display); font-size: 1.2rem; font-weight: 700; letter-spacing: -.03em; }
+  .o-company { color: var(--sell); font-weight: 650; }
+  .o-date { color: var(--muted); font-size: .79rem; margin-left: auto; }
+  .status-pill {
+    display: inline-block;
+    background: var(--c, var(--accent));
+    color: #050506;
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: .78rem;
+    font-weight: 700;
+  }
+  @supports (color: color-mix(in srgb, red, blue)) {
+    .status-pill {
+      background: color-mix(in srgb, var(--c, var(--accent)) 15%, transparent);
+      color: var(--c, var(--accent));
+      border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 40%, transparent);
+    }
+  }
+  .o-body { display: grid; grid-template-columns: 1fr auto; gap: 8px 18px; font-size: .89rem; }
+  .o-items { white-space: pre-wrap; word-break: break-word; background: rgba(255,255,255,.03); padding: 13px 14px; border-radius: 12px; border: 1px solid var(--border); font-size: .84rem; }
+  .o-amount { font-family: var(--display); color: #fff; font-weight: 700; font-size: 1.4rem; letter-spacing: -.03em; text-align: right; font-variant-numeric: tabular-nums; }
+  .o-emp { grid-column: 1 / -1; font-size: .86rem; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .o-emp b { color: var(--text); }
+  .o-emp.none b { color: var(--accent); }
+
+  .steps { display: flex; flex-wrap: wrap; gap: 6px; }
+  .stbtn {
+    position: relative; overflow: hidden;
+    background: rgba(255,255,255,.035);
+    color: #d2d2d8;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: .79rem;
+    font-weight: 540;
+    cursor: pointer;
+    font-family: inherit;
+    transition: color .2s, background-color .25s, border-color .2s, transform .3s var(--ease-spring);
+  }
+  .stbtn:hover:not(:disabled) { border-color: var(--c); color: var(--c); }
+  .stbtn:active:not(:disabled) { transform: scale(.9); }
+  .stbtn.active { background: var(--c); border-color: var(--c); color: #050506; font-weight: 700; }
+  .stbtn:disabled { opacity: .3; cursor: not-allowed; }
+
+  details.hist { font-size: .81rem; color: var(--muted); }
+  details.hist summary { cursor: pointer; transition: color .2s; }
+  details.hist summary:hover { color: var(--text); }
+  details.hist ul { margin: 8px 0 0; padding-left: 18px; }
+  .ok { color: var(--sell); }
+  .ko { color: var(--danger); }
+  .o-actions { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; align-items: center; }
+  .link-btn { background: none; border: none; color: var(--sell); cursor: pointer; font-size: .8rem; padding: 0; text-decoration: none; font-family: inherit; font-weight: 600; transition: opacity .2s, transform .25s var(--ease-spring); }
+  .link-btn:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .link-btn:active { transform: scale(.92); opacity: .7; }
+  .del-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .8rem; padding: 0; font-family: inherit; transition: color .2s, transform .25s var(--ease-spring); }
+  .del-btn:hover { color: var(--danger); }
+  .del-btn:active { transform: scale(.92); }
+
+  /* ============================================================
+     STATISTIQUES & ADMINISTRATION
+     ============================================================ */
+  .page-container { max-width: 1350px; margin: 0 auto; padding: 36px 28px 80px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .kpi {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 20px 22px;
+  }
+  .kpi .k-label { color: var(--muted); font-size: .8rem; font-weight: 560; }
+  .kpi .k-val { font-family: var(--display); font-size: 2.1rem; font-weight: 700; margin-top: 8px; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+
+  /* Notification */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    z-index: 60;
+    overflow: hidden;
+    max-width: min(580px, 92vw);
+    padding: 14px 22px 16px 20px;
+    border-radius: 18px;
+    font-size: .9rem;
+    font-weight: 560;
+    background: rgba(16,16,19,.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-strong);
+    box-shadow: 0 24px 60px -16px rgba(0,0,0,.9);
+  }
+  #toast::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: currentColor; margin-right: 11px; vertical-align: 1px; }
+  #toast::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px; background: currentColor; opacity: .55; transform-origin: left center; }
+  #toast.go { animation: gpToastIn .5s var(--ease-spring); }
+  #toast.go::after { animation: gpToastBar 5s linear forwards; }
+  @keyframes gpToastIn { from { opacity: 0; transform: translate(-50%, 28px) scale(.94); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+  @keyframes gpToastBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+  #toast.ok  { border-color: rgba(61,139,255,.55); color: var(--teal); }
+  #toast.err { border-color: rgba(255,107,107,.55); color: var(--danger); }
+
+  #maintenanceOverlay { position: fixed; inset: 0; z-index: 20000; display: grid; place-items: center; padding: 24px; background: rgba(5, 8, 15, .97); color: #fff; text-align: center; }
+  #maintenanceOverlay[hidden] { display: none; }
+  .maintenance-card { width: min(560px, 100%); padding: 34px 26px; border: 1px solid rgba(255,255,255,.14); border-radius: 24px; background: linear-gradient(145deg, rgba(255,122,26,.12), rgba(61,139,255,.12)); box-shadow: 0 24px 80px rgba(0,0,0,.4); }
+  .maintenance-card h1 { margin: 12px 0; font-size: clamp(1.6rem, 4vw, 2.4rem); }
+  .maintenance-card p { color: #c8ccd6; line-height: 1.65; }
+  .maintenance-icon { font-size: 3rem; }
+  .maintenance-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+
+  footer { color: var(--muted); font-size: .8rem; text-align: center; padding: 32px 20px 48px; }
+
+  @media (max-width: 720px) {
+    header { margin: 8px 8px 0; top: 8px; padding: 10px 12px; border-radius: 20px; }
+    #mainnav { border-radius: 16px; }
+    .brand small { display: none; }
+    .userbar { min-width: 0; }
+    #userWidget > div { flex-wrap: wrap; justify-content: flex-end; border-radius: 16px !important; }
+    .tabs { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab { flex: none; }
+    .dispatch-wrap { padding: 16px 12px; }
+    .page-container { padding: 24px 16px 60px; }
+    .hero { padding-top: 64px; }
+  }
+
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="topbar">
+    <a class="brand" href="#accueil">
+      <span class="logo">📮</span>
+      <span id="brandName">Go Postal</span>
+      <small>Liège City</small>
+    </a>
+
+    <!-- Navigation masquée tant que le compte n'est pas connecté et validé -->
+    <nav id="mainnav" hidden>
+      <a href="#accueil" data-page="accueil">Présentation</a>
+      <a href="#catalogue" data-page="catalogue">Catalogue</a>
+      <a href="#mes-commandes" data-page="mes-commandes" id="navMyOrders">Mes Commandes</a>
+      <a href="#dispatch" data-page="dispatch" id="navDispatch" hidden>📋 Dispatch</a>
+      <a href="#stats-globales" data-page="stats-globales" id="navStats" hidden>📊 Statistiques</a>
+      <a href="#staff-admin" data-page="staff-admin" id="navAdmin" hidden>👑 Gestion Comptes <span id="pendingCountBadge" class="role-badge role-pending" hidden>0</span></a>
+      <a href="#hierarchie" data-page="hierarchie">Hiérarchie</a>
+      <a href="#" id="discordBtn" class="discord" target="_blank" rel="noopener">Discord</a>
+    </nav>
+
+    <div class="userbar">
+      <span id="sync"></span>
+      <div id="userWidget"></div>
+    </div>
+  </div>
+
+  <!-- Onglets et filtres du Catalogue -->
+  <div class="tabs" id="tabs" hidden></div>
+  <div class="toolbar" id="controls" hidden>
+    <input id="search" type="search" placeholder="Rechercher un item (ex : sniper, pansement, turbo…)">
+    <select id="sort">
+      <option value="menu">Tri : ordre du menu</option>
+      <option value="name">Tri : nom (A → Z)</option>
+      <option value="priceDesc">Tri : prix ↓</option>
+      <option value="priceAsc">Tri : prix ↑</option>
+      <option value="weightDesc">Tri : poids ↓</option>
+    </select>
+  </div>
+</header>
+
+<!-- ============================================================
+     PAGE 1 : PRÉSENTATION / ACCUEIL
+     ============================================================ -->
+<section class="page" id="page-accueil" hidden>
+  <div class="hero">
+    <div class="pill">📮 Liège City — Système Unifié</div>
+    <h1>Bienvenue chez <span id="brandName2">Go Postal</span></h1>
+    <p>Retrouve ici tous les items disponibles à la commande avec leurs prix et leur poids, suis l'état de tes livraisons en direct et gère le Dispatch en temps réel.</p>
+    <div class="cta">
+      <a class="btn primary" href="#catalogue">🛒 Voir le catalogue</a>
+      <a class="btn ghost2" id="heroDiscord" href="#" target="_blank" rel="noopener">Rejoindre le Discord</a>
+    </div>
+    <div class="stats-line" id="stats"></div>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card"><div class="sn">1</div><h3>Compte validé</h3><p>Ton compte a été validé par le Patron ou le Co-patron avec tes accès métier.</p></div>
+    <div class="step-card"><div class="sn">2</div><h3>Compose ta commande</h3><p>Accède aux points de vente autorisés pour ton rôle et ajoute tes items au panier.</p></div>
+    <div class="step-card"><div class="sn">3</div><h3>Dispatch & Discord</h3><p>La commande arrive instantanément en Embed sur Discord (fuseau Europe/Brussels) et dans le Dispatch Staff.</p></div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE 2 : AUTHENTIFICATION & VERROUILLAGE D'ACCÈS
+     ============================================================ -->
+<section class="page" id="page-auth" hidden>
+  <div class="hero small">
+    <h1>🔐 Connexion & Création de Compte</h1>
+    <p>L'accès au site est strictement réservé aux comptes validés par le Patron ou le Co-patron.</p>
+  </div>
+
+  <div id="authLockNotice" class="lock-notice" hidden></div>
+
+  <div class="auth-wrap">
+    <!-- Connexion -->
+    <div class="panel">
+      <h2>🔑 Connexion</h2>
+      <form id="loginForm" style="display:flex;flex-direction:column;gap:12px">
+        <div>
+          <label class="l" for="loginUser">Identifiant</label>
+          <input type="text" id="loginUser" placeholder="Ton identifiant" required>
+        </div>
+        <div>
+          <label class="l" for="loginPass">Mot de passe</label>
+          <input type="password" id="loginPass" placeholder="••••••••" required>
+        </div>
+        <button class="btn primary" type="submit">Se connecter</button>
+      </form>
+    </div>
+
+    <!-- Inscription (Créé en Recrue non validée par défaut) -->
+    <div class="panel">
+      <h2>📝 Créer un compte</h2>
+      <p style="margin:0;color:var(--muted);font-size:.82rem" id="registerHintText">
+        Tout nouveau compte est créé <b>en attente d'autorisation</b>. Tant que le Patron ou le Co-patron ne l'a pas validé, l'accès au site reste bloqué.
+      </p>
+      <form id="registerForm" style="display:flex;flex-direction:column;gap:11px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label class="l" for="regFirst">Prénom RP <span class="req">*</span></label>
+            <input type="text" id="regFirst" placeholder="Prénom" maxlength="50" required>
+          </div>
+          <div>
+            <label class="l" for="regLast">Nom RP <span class="req">*</span></label>
+            <input type="text" id="regLast" placeholder="Nom" maxlength="50" required>
+          </div>
+        </div>
+        <div>
+          <label class="l" for="regPhone">Numéro de téléphone RP <span class="req">*</span></label>
+          <input type="tel" id="regPhone" placeholder="Ex : 04 123 45 67" maxlength="30" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div>
+            <label class="l" for="regUser">Identifiant <span class="req">*</span></label>
+            <input type="text" id="regUser" placeholder="identifiant" maxlength="40" required>
+          </div>
+          <div>
+            <label class="l" for="regPass">Mot de passe <span class="req">*</span></label>
+            <input type="password" id="regPass" placeholder="••••••••" required>
+          </div>
+        </div>
+        <button class="btn primary" type="submit">Créer mon compte</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE 3 : CATALOGUE & CRÉATION DE COMMANDE
+     ============================================================ -->
+<div class="layout-cat page" id="page-catalogue" hidden>
+  <main>
+    <section id="overview">
+      <div id="overviewCount" style="color:var(--muted);font-size:.85rem;margin-bottom:12px"></div>
+      <div class="grid" id="overviewGrid"></div>
+    </section>
+
+    <section id="itemsView" hidden>
+      <div class="banner" id="banner" hidden></div>
+      <div id="count"></div>
+      <div id="list"></div>
+      <div class="empty" id="empty" hidden>Aucun item ne correspond à ta recherche.</div>
+    </section>
+  </main>
+
+  <aside id="order">
+    <h2>🧾 Ma commande</h2>
+
+    <div>
+      <label for="company">Entreprise <span class="req">*</span></label>
+      <select id="company"></select>
+    </div>
+    <div>
+      <label for="firstName">Prénom <span class="req">*</span></label>
+      <input type="text" id="firstName" placeholder="Prénom" maxlength="60" autocomplete="given-name" required>
+    </div>
+    <div>
+      <label for="lastName">Nom <span class="req">*</span></label>
+      <input type="text" id="lastName" placeholder="Nom" maxlength="60" autocomplete="family-name" required>
+    </div>
+    <div id="phoneGroup" hidden>
+      <label for="phone">Numéro de téléphone <span class="req">*</span></label>
+      <input type="tel" id="phone" placeholder="Ex. : 04 123 45 67" maxlength="30" autocomplete="tel">
+      <small style="color:var(--muted);font-size:.75rem">Obligatoire uniquement pour les commandes de particuliers.</small>
+    </div>
+
+    <!-- Encart Règle Particulier (Minimum 5 000 €) -->
+    <div id="particulierRuleBox" class="rule-box" hidden></div>
+
+    <div id="orderLines"></div>
+
+    <div class="sub"><span>Nombre d'articles</span><span id="totalQty">0</span></div>
+    <div class="sub"><span>Poids estimé</span><span id="totalWeightLabel">0 g</span></div>
+    <div class="total"><span>Total</span><span class="amount" id="totalPrice">0 €</span></div>
+
+    <div>
+      <label for="note">Remarque (facultatif)</label>
+      <textarea id="note" placeholder="Précisions pour la livraison, le lieu, l'horaire…" maxlength="500"></textarea>
+    </div>
+
+    <div id="status" hidden></div>
+    <button class="btn primary" id="send">Envoyer la commande sur Discord</button>
+    <button class="btn ghost danger-outline" id="clear">Vider la commande</button>
+  </aside>
+</div>
+
+<!-- ============================================================
+     PAGE 4 : MES COMMANDES (ESPACE CLIENT / ENTREPRISE)
+     ============================================================ -->
+<section class="page page-container" id="page-mes-commandes" hidden>
+  <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px">
+    <div>
+      <h1 style="margin:0;font-size:1.5rem">📦 Suivi de mes commandes</h1>
+      <p style="margin:4px 0 0;color:var(--muted);font-size:.9rem" id="myOrdersSubtitle"></p>
+    </div>
+    <a class="btn primary" href="#catalogue" style="text-decoration:none">➕ Nouvelle commande</a>
+  </div>
+  <div id="myOrdersList" class="orders-list"></div>
+  <div id="myOrdersEmpty" class="empty" hidden>Aucune commande enregistrée pour ton compte / ton entreprise pour le moment.</div>
+</section>
+
+<!-- ============================================================
+     PAGE 5 : DISPATCH DE COMMANDE (EXCLUSIF STAFF VALIDÉ)
+     ============================================================ -->
+<section class="page" id="page-dispatch" hidden>
+  <div class="dispatch-wrap">
+    <main>
+      <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px">
+        <div>
+          <h2 style="margin:0;font-size:1.25rem">📋 <span id="dispatchHeading">Dispatch des Commandes</span></h2>
+          <div style="color:var(--muted);font-size:.8rem" id="dispatchPermsHint"></div>
+        </div>
+        <div class="view-switch" id="viewSwitch">
+          <button type="button" data-view="table" class="active">📊 Tableau</button>
+          <button type="button" data-view="kanban">🗂️ Kanban</button>
+          <button type="button" data-view="cards">📇 Cartes</button>
+        </div>
+      </div>
+
+      <!-- Onglets : commandes actives / Archive -->
+      <div class="chips" id="dispatchTabs" style="margin-bottom:12px"></div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="dispatch-bar">
+        <input id="dispatchSearch" type="search" placeholder="Rechercher (#ID, entreprise, client, contenu, employé…)">
+        <select id="fCompanyFilter"></select>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px">
+        <button class="btn ghost danger-outline" type="button" id="archiveDelivered">📦 Archiver les commandes livrées</button>
+      </div>
+
+      <!-- Conteneurs des 3 vues Dispatch -->
+      <div id="dispatchTableView" class="table-wrap"></div>
+      <div id="dispatchKanbanView" class="kanban-board" hidden></div>
+      <div id="dispatchCardsView" class="orders-list" hidden></div>
+      <div class="empty" id="dispatchEmpty" hidden></div>
+
+      <div style="margin-top:20px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;color:var(--muted);font-size:.8rem">
+        <span id="modeNote"></span>
+        <button class="btn ghost" id="exportBtn" type="button">⬇ Exporter JSON</button>
+        <button class="btn ghost" id="importBtn" type="button">⬆ Importer JSON</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden>
+      </div>
+    </main>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE 6 : STATISTIQUES GLOBALES (CO-PATRON & PATRON)
+     ============================================================ -->
+<section class="page page-container" id="page-stats-globales" hidden>
+  <h1 style="margin:0 0 6px;font-size:1.5rem">📊 Statistiques Globales Go Postal</h1>
+  <p style="margin:0 0 20px;color:var(--muted);font-size:.9rem">Accès réservé à la direction (Co-patron & Patron).</p>
+
+  <div class="kpi-grid" id="statsKpis"></div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));gap:20px">
+    <div class="panel">
+      <h2>🏢 Chiffre d'affaires par Entreprise</h2>
+      <div id="statsByCompany"></div>
+    </div>
+    <div class="panel">
+      <h2>🧑‍💼 Performance des Employés (Commandes prises en charge)</h2>
+      <div id="statsByEmployee"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE 7 : GESTION DU STAFF & DES COMPTES (PATRON & CO-PATRON)
+     ============================================================ -->
+<section class="page page-container" id="page-staff-admin" hidden>
+  <h1 style="margin:0 0 6px;font-size:1.5rem">👑 Administration des Comptes, Rôles & Entreprises</h1>
+  <p style="margin:0 0 20px;color:var(--muted);font-size:.9rem">
+    Accessible au <b>Patron</b> et au <b>Co-patron</b> : valide les nouveaux comptes (créés en attente d'autorisation), attribue les rôles ou suspends/supprime un accès (effet immédiat sur la session de la personne).
+  </p>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin:0 0 22px;padding:16px;border:1px solid var(--line, rgba(255,255,255,.14));border-radius:16px;background:rgba(255,255,255,.035)">
+    <div><b>🛠️ Mode maintenance</b><div id="maintenanceStatus" style="color:var(--muted);font-size:.88rem;margin-top:4px">Vérification du statut…</div></div>
+    <button type="button" id="maintenanceToggle" class="btn" style="background:#ff7a1a;color:#fff;border:0;padding:11px 16px;border-radius:10px;font-weight:700">Activer la maintenance</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="dispatch-table">
+      <thead>
+        <tr>
+          <th>Identifiant</th>
+          <th>Nom & Prénom RP</th>
+          <th>Téléphone</th>
+          <th>Statut d'accès</th>
+          <th>Rôle / Entreprise actuelle</th>
+          <th>Attribuer Grade Staff ou Rôle Entreprise</th>
+          <th>Actions immédiates</th>
+        </tr>
+      </thead>
+      <tbody id="adminUsersTable"></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================
+     PAGE 8 : HIÉRARCHIE
+     ============================================================ -->
+<section class="page" id="page-hierarchie" hidden>
+  <div class="hero small">
+    <h1>Notre hiérarchie</h1>
+    <p>L'équipe de direction et les employés validés de Go Postal à Liège City.</p>
+  </div>
+  <div id="staff" class="staff"></div>
+</section>
+
+<button id="fab">🧾 Ma commande</button>
+<div id="maintenanceOverlay" hidden role="alertdialog" aria-modal="true" aria-labelledby="maintenanceTitle">
+  <div class="maintenance-card">
+    <div class="maintenance-icon">🛠️</div>
+    <h1 id="maintenanceTitle">Site temporairement indisponible</h1>
+    <p>Go Postal Liège City est actuellement en maintenance afin d'effectuer des améliorations. Merci de réessayer un peu plus tard.</p>
+    <p style="font-size:.85rem">Les commandes seront de nouveau accessibles dès la fin de l'intervention.</p>
+    <div class="maintenance-actions"><button type="button" id="maintenanceRetry" class="btn" style="padding:11px 18px;border-radius:10px">Vérifier à nouveau</button></div>
+  </div>
+</div>
+<div id="toast" hidden></div>
+
+<footer id="catFooter" hidden>
+  Les noms se terminant par « … » sont tronqués dans le jeu. Un prix « — » signifie qu'il n'est pas connu : l'item ne peut pas être commandé.
+</footer>
+
+<script>
+/* ==============================================================
+   0) CONFIGURATION GLOBALE — DISCORD WEBHOOK & FIREBASE
+   ============================================================== */
+/**
+ * URL de Webhook Discord global (optionnel).
+ * Si renseigné, chaque commande y est envoyée en plus du webhook de l'entreprise.
+ */
+const DISCORD_WEBHOOK_URL = "";
+
+/**
+ * Webhook Discord du salon des EMPLOYÉS Go Postal (à renseigner).
+ * À chaque nouvelle commande, une alerte y est envoyée avec le montant et le véhicule requis.
+ * Si laissé vide, c'est le webhook global ci-dessus qui est utilisé (s'il est renseigné).
+ */
+const DISCORD_EMPLOYEES_WEBHOOK_URL = "https://discord.com/api/webhooks/1562592051252568134/qSKBcj9x1hIcjpSMzDd0eQ6uDstTUBsffIr1JXiBsvF8nn8iMqmvrI0m8ytl7QYuSBB-";
+
+/** Webhook Discord réservé aux notifications de salaires (salon séparé). */
+const DISCORD_SALAIRES_WEBHOOK_URL = "";
+
+/** Webhook Discord réservé aux notifications de maintenance (salon séparé). */
+const DISCORD_MAINTENANCE_WEBHOOK_URL = "https://discord.com/api/webhooks/1562887579555074078/t2x6YDtZS4qg6mWZE9wxwuutKnMD4ZYbzokfSKmBKO8mYlTOhErMFfqOPd25GYRs63ds";
+
+/* Règle véhicule selon le poids total de la commande (en grammes) :
+   moins de 380 kg → camionnette · de 380 kg à 950 kg → camion avec remorque obligatoire */
+const VEHICLE_VAN_LIMIT_G   = 380000;
+const VEHICLE_TRUCK_LIMIT_G = 950000;
+
+/* Base de données partagée Firebase Realtime Database */
+const FIREBASE_URL = "https://go-postal-liege-city-default-rtdb.europe-west1.firebasedatabase.app/";
+const DB_PATH = "gp_commandes_202232baffae40ed";
+
+/* Nom affiché sur le site et comme pseudo du bot Discord */
+const SITE_NAME = "Go Postal";
+
+/* Lien d'invitation du serveur Discord */
+const DISCORD_INVITE_URL = "https://discord.gg/tHXubk8beV";
+
+/* Multiplicateur appliqué à tous les prix du catalogue initial (prix de base × 2) */
+const PRICE_MULTIPLIER = 2;
+
+/* Seuil minimum de commande pour un Particulier (en €) */
+const PARTICULIER_MIN_ORDER = 5000;
+
+/* Entreprises du menu déroulant + multiplicateur spécifique + webhook Discord de leur salon */
+const COMPANIES = [
+  { nom: "Beeker's",        mult: 1.5, webhook: "https://discord.com/api/webhooks/1560401977656090766/Ri-ZY5VMqQwIIrPwaRG5mljXmxWYFe50CG6xXmJLxQPP6zDxK-p3bUmHBIk4UHIYLdBB" },
+  { nom: "Hayes Dépannage", webhook: "https://discord.com/api/webhooks/1560402036992770088/aD4ayKz4ABa2Sf3kNDcw4BflvBa2ZAixPlk3WxJ3aZp0oXDWZpcnXXZIO1K1JL6nyu5k" },
+  { nom: "Harmony",         webhook: "https://discord.com/api/webhooks/1560402111412568156/D5nTs6sFolF5Zcr_lVDgy450SctXCsRFl56subuQ5UvJY4dhi8qXAWbgKLWiEMnbRzJC" },
+  { nom: "Pizza This",      webhook: "https://discord.com/api/webhooks/1560402186729422928/-c9jmTq1zpQtyivE5om0BXfX_v6u6MG0Y0Ajz_TdNTDBmX2ZkZFmfNhiUUjTZMZ9aOSO" },
+  { nom: "Horny's",         webhook: "https://discord.com/api/webhooks/1560402250076131368/Bgdcod77-EVPURcOI5gzRG2SHYt2i5aDXZK6FJlYNsOe2aD8UqM3_yldeX_6uNZ2LT3G" },
+  { nom: "Bahamas",         webhook: "https://discord.com/api/webhooks/1560402292023230587/IC4hWMdl3XovyyUsMbgK4-7dcdBlDvoxNmQTdjIPQNQpLSeZFk83rgnwu0wlXkQ9zSQ4" },
+  { nom: "LTD",             webhook: "https://discord.com/api/webhooks/1560402365666828318/IVja9NokX-hfdNxYYFX50YbEG7iPYTas49fTLhQYp_NUTCwQqA9ms6e2MJ0oTuSvFbfi" },
+  { nom: "La Ferme",        webhook: "https://discord.com/api/webhooks/1560402417470930997/K8bBzzEflCXULv4-qqpZIKXaCVHLqrS0TNE92P_t5FDj7UEBsNxGUUKZPD0DcInHbrPD" },
+  { nom: "Armée",           webhook: "https://discord.com/api/webhooks/1562144568173011004/IB1SSn0sXwR4_ppJ0j74-kLoZKNDWVaNy6JRf01X6SCAR85QC7NCyJ9c1Reap9k6GtLd" },
+  { nom: "Police Fédéral",  webhook: "https://discord.com/api/webhooks/1560402466368126986/fNfJ__hQ1hnRR1J4imNVyZnj90N7Y03WUFhN4UZ7bDH3HHWrKBCfpHsRR796iNMHjEpb" },
+  { nom: "Police Local",    webhook: "https://discord.com/api/webhooks/1560402528653287424/Uc1LK_wn6gC2WIaMsniZt7gMFum9BQzoDSo2rkzH4SQbaNViO-X1VBgY6zEgU6H2w1NU" },
+  { nom: "CHL",             webhook: "https://discord.com/api/webhooks/1560402581547909172/6SuqasY62fciO_MP1fodBN9uLyV7ZgfoOo5AAnv8IxTD3sKecQH0y79fOD-1u5-TiH69" },
+  { nom: "Pompier",         webhook: "https://discord.com/api/webhooks/1560402625923387496/0EyF_06i0Qg7sZDndfP2sYycUu__lNVJbxR66v-2U3LWmbFyi9KaWJwiLHeB4VI3ADaS" },
+  { nom: "Particulier",     webhook: "https://discord.com/api/webhooks/1561461357465968673/qE4HWFQtpEODZjfWspZ9U51XYghEQb8zpiJVlsehY8N1KRN-OZbBxpRAsYZT4Q5iWNWY" }
+];
+
+/* Restrictions d'accès aux onglets du catalogue pour les comptes Entreprises (Clients) */
+const CLIENT_POINT_RESTRICTIONS = {
+  police:  ["Police Local", "Police Fédéral", "Armée"], // L'Armée a le même accès que la Police
+  pompier: ["Pompier"],
+  medical: ["CHL"],
+  mecano:  ["Beeker's", "Hayes Dépannage", "Harmony"]
+};
+
+/* Services publics interdits aux Recrues (Mécano n'est PAS bloqué pour les recrues) */
+const RECRUE_BLOCKED_PUBLIC_SERVICES = ["police", "pompier", "medical"];
+
+/* Hiérarchie RBAC du Staff avec niveaux de permissions gradués */
+const ROLES = {
+  client:   { id: "client",   label: "Entreprise / Client", level: 0, badge: "role-client" },
+  recrue:   { id: "recrue",   label: "Recrue",              level: 1, badge: "role-recrue",   desc: "Dispatch & statuts. Catalogue : accès hors services publics (Police/Pompier/Médical)." },
+  employe:  { id: "employe",  label: "Employé",             level: 2, badge: "role-employe",  desc: "Prise en charge de commandes & accès à toutes les catégories du catalogue." },
+  manager:  { id: "manager",  label: "Manager",             level: 3, badge: "role-manager",  desc: "Modification, annulation, suppression & accès à toutes les catégories du catalogue." },
+  copatron: { id: "copatron", label: "Co-patron",           level: 4, badge: "role-copatron", desc: "Accès total catalogue, Dispatch, Statistiques et gestion des comptes/rôles." },
+  patron:   { id: "patron",   label: "Patron",              level: 5, badge: "role-patron",   desc: "Droits totaux : Catalogue complet, Dispatch, Statistiques et gestion des comptes/rôles." }
+};
+
+/* Duo d'employés : une commande prise en duo est assignée aux deux et son salaire est divisé par 2 */
+const DUO_NAMES = ["Lize Landro", "Red Garden"];
+const DUO_LABEL = DUO_NAMES.join(" & ");
+const nameKey = (n) => String(n || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+/* Liste des employés d'une commande (séparés par « & » quand c'est un duo) */
+const employeesOf = (o) => String((o && o.employee) || "").split(/\s*&\s*/).map(x => x.trim()).filter(Boolean);
+const isDuoOrder = (o) => employeesOf(o).length > 1;
+const isDuoMember = () => DUO_NAMES.some(n => nameKey(n) === nameKey(fullName()));
+/* Bouton duo réservé uniquement aux deux membres du duo (Lize Landro et Red Garden) */
+const canDuo = () => userLevel() >= 2 && isDuoMember();
+const duoBtnHtml = (o, cls) => canDuo()
+  ? `<button type="button" class="${cls}" data-act="duo" data-id="${esc(o.id)}" title="Assigner la commande à ${esc(DUO_LABEL)} (salaire divisé par 2)">👥 Duo ${esc(DUO_NAMES.map(n => n.split(" ")[0]).join(" & "))}</button>`
+  : "";
+
+/* Statuts des commandes */
+const STATUSES = [
+  { id: "pending",    icon: "🕒", label: "En attente",             short: "En attente",    color: 0xFBBF24, css: "var(--warn)" },
+  { id: "processing", icon: "⏳", label: "En cours de traitement", short: "En traitement", color: 0xF5A524, css: "var(--accent)" },
+  { id: "done",       icon: "✅", label: "Commande finie",         short: "Commande finie",         color: 0x4ADE80, css: "var(--price)" },
+  { id: "shipping",   icon: "🚚", label: "Livraison en cours",     short: "En livraison",  color: 0x60A5FA, css: "var(--sell)" },
+  { id: "delivered",  icon: "📦", label: "Livraison effectuée",    short: "Livrée",        color: 0x14B8A6, css: "var(--teal)" },
+  { id: "cancelled",  icon: "❌", label: "Commande annulée",       short: "Annulée",       color: 0xF87171, css: "var(--danger)" }
+];
+const STATUS_BY_ID = Object.fromEntries(STATUSES.map(s => [s.id, s]));
+
+/* ==============================================================
+   1) DONNÉES DES ITEMS DU CATALOGUE INITIAL
+   ============================================================== */
+
+/* ---------- BOISSONS ---------- */
+const ITEMS_BOISSONS = [
+  ["Champagne Antoinette", 650, 50],   ["Champagne Bleuterd", 5, 50],
+  ["Champagne Robespierre", 650, 50],   ["Vin rosé", 650, 50],
+  ["Vin Rouge", 650, 50],   ["Bouteille d'Alcool", 100, 50],
+  ["vin Blanc", 650, 50],   ["Bière", 100, 2],
+  ["Bière Dusche", 100, 5],   ["Bière Pride", 100, 2],
+  ["Brochette", 250, 1],   ["Flûte à Champagne", 5, 1],
+  ["Thé Glacé", 280, 1],   ["Limonade", 300, 1],
+  ["Liqueur Rouge", 30, 1],   ["Martini", 250, 6],
+  ["Menthe", 30, 15],   ["Orange", 30, 15],
+  ["Pastis", 100, 10],   ["Verre à Shot", 5, 1],
+  ["Sucre", 30, 5],   ["Sirop de Citron", 30, 1],
+  ["Sirop de Menthe", 30, 1],   ["Sirop de Sucre de Canne", 5, 1],
+  ["Verre à Whisky", 5, 1],   ["Verre à vin", 5, 1],
+  ["Bouteille de Vin Vide", 300, 1],   ["Jus de Vin Blanc", 400, 1],
+  ["Jus de Vin Rouge", 400, 1]
+];
+
+/* ---------- MÉCANO ---------- */
+const ITEMS_MECANO = [
+  ["Pièces de Performance", 500, 5],   ["Pièces Cosmétiques", 300, 5],
+  ["Kit Stancing", 500, 5],   ["Kit Peinture", 1000, 5],
+  ["Jeu de Roues", 500, 5],   ["Contrôleur d'Eclairage", 500, 5],
+  ["Kit Fumée de Pneu", 300, 5],   ["Pneu Blindés", 5, 5],
+  ["Kit d'Accessoires", 500, 5],   ["Turbo", 150, 5],
+  ["Freins Céramique", 800, 5],   ["Huile Moteur", 80, 5],
+  ["Remplacement de Pneu", 1200, 5],   ["Remplacement d'Embrayage", 500, 5],
+  ["Filtre à Air", 250, 5],   ["Bougie d'Allumage", 50, 5],
+  ["Remplacement de Plaquettes de Frein", 500, 5],   ["Pièces de Suspension", 1000, 5],
+  ["Moteur I4 2.5L", 10, 10],   ["Moteur V6 3.3L", 1600, 5],
+  ["Moteur V8 6.5L", 2000, 20],   ["Moteur Electrique", 1000, 5],
+  ["Batterie Electrique", 2500, 5],   ["Liquide de Refroidissement", 5, 5],
+  ["Transmission Intégrale (AWD)", 1000, 5],   ["Transmission Arrière (RWD)", 1000, 5],
+  ["Transmission Avant (FWD)", 1000, 5],   ["Pneus Slick", 1500, 5],
+  ["Pneus Semi-Slick", 1400, 5],   ["Pneux Tout-Terrain", 5, 5],
+  ["Kit Tuning Drift", 500, 5],   ["Ruban Adhésif", 200, 5],
+  ["Tablette Mécanicien", 500, 5],   ["Boites de Vitesses Manuelle", 5, 5],
+  ["Céramique Basique", 10, 5],   ["Céramique Premium", 10, 5],
+  ["Cire Basique", 10, 5],   ["Cire Avancée", 10, 5],
+  ["Kit de nettoyage", 200, 5],   ["Kit Electronique", 30, 5],
+  ["Kit de réparation", 300, 50]
+];
+
+/* ---------- MÉDICAL ---------- */
+const ITEMS_MEDICAL = [
+  ["Tablette", 100, 5],   ["Garrot", 50, 5],
+  ["Pansement Compressif", 50, 5],   ["Bandage Elastique", 50, 5],
+  ["Gaze Hémostatique", 50, 5],   ["Kit Chirurgical", 50, 5],
+  ["Gaze Méchage", 5, 5],   ["Injecteur d'Epinéphrine", 50, 5],
+  ["Injecteur de Morphine", 50, 5],   ["Propofol (100ml)", 50, 5],
+  ["Propofol (250ml)", 50, 5],   ["Poche de sang (100ml)", 5, 5],
+  ["Poche de sang (250ml)", 50, 5],   ["Poche de sang (500ml)", 50, 5],
+  ["Poche de sang (750ml)", 50, 5],   ["Poche de sang (1000ml)", 50, 5],
+  ["Moniteur ECG", 50, 100],   ["Fentanyl", 50, 5],
+  ["Colier Cervical", 5, 5],   ["Accès intra-osseux (IO)", 5, 5],
+  ["Accès intraveineux (IV)", 5, 5],   ["Dispositif de Massage Cardiaque LUCAS 3", 50, 1000],
+  ["Défibrilateur", 5, 1000],   ["Sutures Adésives", 5, 5],
+  ["Compresse Grasse", 50, 5],   ["Pansement Absorbant", 50, 5],
+  ["Pansement Adhésif", 50, 5],   ["Pansement Hydrogel", 50, 5],
+  ["Masque 02", 5, 5],   ["Poche de froid", 50, 5],
+  ["Kétamine", 1, 500],   ["Acide Tranexamique", 50, 300]
+];
+
+/* ---------- POLICE : armurerie & équipement ---------- */
+const ITEMS_POLICE = [
+  ["Tablette de Radar de Vol", 5, 300],   ["Tablette", 100, 300],
+  ["Radio", 100, 125],   ["Heavy Rifle", 3300, 50000],
+  ["Grip", 280, 1000],   ["Medium Scope", 280, 2500],
+  ["Lampe d'Arme", 120, 1750],   ["Bouclier CTSFO 2", 220, 7500],
+  ["Smoke Grenade", 600, 300],   ["9mm", 7, 1],
+  ["5.56x45", 4, 2],   ["7.62x39", 8, 3],
+  ["7.62x51", 9, 4],   ["EMP Round", 400, 5],
+  ["40mm Launcher", 3300, 5],   ["Menottes", 200, 5],
+  ["Gazeuse", 500, 5],   ["Attache de Serrage", 20, 5],
+  ["Plaque Légère", 250, 5],   ["Plaque Lourde", 500, 5],
+  ["Bulletproof Vest", 3000, 5],   ["Alcool Test", 5, 5],
+  ["Herse", 500, 5],   ["Micro d'Epaule Talkie-Walkie", 1000, 5],
+  ["Lampe d'Arme", 120, 5],   ["Silencieux", 280, 5],
+  ["Tactical Supressor", 5, 5],   ["Grip", 280, 5],
+  ["Heavy Barrel", 280, 5],   ["Extended Pistol Clip", 5, 5],
+  ["Small Scope", 280, 5],   ["Medium Scope", 280, 5],
+  ["Large Scope", 280, 5],   ["Flashlight", 125, 80],
+  ["Nightstick", 1000, 80],   ["Pistolet Radar", 1000, 1250],
+  ["Combat Pistol", 785, 2500],   ["X19", 1400, 8000],
+  ["Combat PDW", 2300, 17500],   ["Carabine Rifle", 5, 28000],
+  ["PM4", 3100, 40000],   ["Tazer", 227, 150],
+  ["Bracelet Electronique", 200, 5],   ["Drone de Police PD-01", 5, 5],
+  ["Chiffon GSR", 100, 5],   ["Kit de test GSR", 100, 5],
+  ["Lampe UV", 250, 5],   ["Appareil Photo d'Enquête", 5, 5],
+  ["Scanner d'Empreinte", 5, 5],   ["Tablette de Gestion Des Bracelets", 5, 5],
+  ["Bracelet Electronique", 200, 5],   ["AEG9", 2300, 25000],
+  ["Sniper Tactique", 5000, 150000],   ["Sniper Tanodized", 5000, 150000],
+  ["Sniper FDE", 5000, 150000],   ["Lumière", 200, 5],
+  ["Parachute", 1000, 5000],   ["Jumelles Tactiques", 1500, 500],
+  ["Boite de Contrôle", 8000, 70000]
+];
+
+/* ---------- POLICE : accessoires d'armes ---------- */
+const ITEMS_POLICE_ACC = [
+  ["Tacticalsniper Mag #04", 200, 20],   ["Tacticalsniper Mag #03", 200, 20],
+  ["Tacticalsniper Mag #02", 200, 20],   ["Tacticalsniper Mag #01", 200, 5],
+  ["Tacticalsniper Bipod", 200, 5],   ["Tacticalsniper Muzzle #01", 200, 5],
+  ["Tacticalsniper Suppressor #01", 5, 5],   ["AGC Clip #01", 5, 5],
+  ["AGC Stock #01", 5, 5],   ["AGC Stock #02", 5, 5],
+  ["AGC Stock #03", 5, 5],   ["AGC Scope #01", 5, 5],
+  ["AGC Scope #02", 5, 5],   ["590 Suppressor #01", 5, 5],
+  ["590 Stock #01", 5, 5],   ["590 Stock #02", 5, 5],
+  ["590 Stock #03", 5, 5],   ["590 Stock #04", 5, 5],
+  ["590 Misc #01", 5, 5],   ["590 Misc #02", 5, 5],
+  ["590 Misc #03", 5, 5],   ["590 Misc #04", 5, 5],
+  ["590 Misc #05", 5, 5],   ["590 Grip #01", 5, 5],
+  ["590 Grip #02", 5, 5],   ["590 Grip #03", 5, 5],
+  ["590 Grip #04", 5, 5],   ["590 Grip #05", 5, 5],
+  ["PM4 Mag #1", 5, 5],   ["PM4 Stock #1", 5, 5],
+  ["PM4 Muzzle #1", 5, 5],   ["PM4 Scope #1", 5, 5],
+  ["X19 Clip #01", 5, 5],   ["X19 Clip #02", 5, 5],
+  ["X19 Clip #03", 5, 5],   ["X19 Muzzle #01", 5, 5],
+  ["X19 Barrel #01", 5, 5],   ["X19 Barrel #02", 5, 5],
+  ["X19 Barrel #03", 5, 5],   ["X19 Barrel #04", 5, 5],
+  ["X19 Slide #01", 5, 5],   ["X19 Slide #02", 5, 5],
+  ["X19 Slide #03", 5, 5],   ["X19 Slide #04", 5, 5],
+  ["X19 Slide #05", 5, 5],   ["X19 Slide #06", 5, 5],
+  ["X19 Slide #07", 5, 5],   ["X19 Slide #08", 5, 5],
+  ["X19 Slide #09", 5, 5],   ["X19 Slide #10", 5, 5],
+  ["Shared Laser #01 (Fits Tacticalsniper, AGC, PM4)", 5, 5],   ["Shared Laser #02 (Fits Tacticalsniper, AGC, PM4)", 5, 5],
+  ["Shared Laser #03 (Fits Tacticalsniper, AGC, PM4)", 5, 5],   ["Shared Laser #07 (Fits Tacticalsniper, AGC, PM4)", 5, 5],
+  ["Shared Laser #08 (Fits Tacticalsniper, AGC, PM4)", 5, 5],   ["Shared Grip #01 (Fits Tacticalsniper, AGC)", 5, 5],
+  ["Shared Grip #03 (Fits Tacticalsniper, AGC)", 5, 5],   ["Shared Grip #08 (Fits Tacticalsniper, AGC)", 5, 5],
+  ["Shared Grip #16 (Fits Tacticalsniper, AGC)", 5, 5],   ["Shared Suppressor #09 (Fits Tacticalsniper)", 5, 5],
+  ["Shared Suppressor #08 Fits Tacticalsniper)", 5, 5],   ["Shared Suppressor #12 (Fits Tacticalsniper)", 5, 5],
+  ["Shared Suppressor #18 Fits Tacticalsniper)", 5, 5],   ["Shared Zoomscope #01 (Fits Tacticalsniper, PM4)", 5, 5],
+  ["Shared Zoomscope #04 (Fits Tacticalsniper)", 5, 5],   ["Shared Zoomscope #05 (fits Tacticalsniper)", 5, 5],
+  ["Shared Zoomscope #06 (Fits Tacticalsniper)", 5, 5],   ["Shared Zoomscope #07 (Fits Tacticalsniper, PM4)", 5, 5],
+  ["Shared Zoomscope #09 (Fits Tacticalsniper)", 5, 5],   ["Shared Zoomscope #10 (Fits Tacticalsniper)", 5, 5],
+  ["Shared Zoomscope #11 (fits Tacticalsniper)", 5, 5],   ["Shared Scope #01 (Fits AGC, 590, PM4)", 5, 5],
+  ["Shared Scope #02 (Fits AGC, 590, PM4)", 5, 5],   ["Shared Scope #05 (Fits AGC, 590, PM4)", 5, 5],
+  ["Shared Scope #06 (Fits AGC, 590, PM4)", 5, 5],   ["Shared Scope #07 (Fits AGC, 590, PM4)", 5, 5],
+  ["Shared Scope #08 (Fits AGC, 590, PM4)", 5, 5],   ["Shared Laser #04 (Fits AGC)", 5, 5],
+  ["Shared Pflash #01 (Fits AGC, 590, X19)", 5, 5],   ["Shared Pflash #02 (Fits AGC, X19)", 5, 5],
+  ["Shared Pflash #03 (Fits AGC, 590, X19)", 5, 5],   ["Shared Suppressor #02 (Fits AGC, X19)", 5, 5],
+  ["Shared Suppressor #03 (Fits AGC, X19)", 5, 5],   ["Shared Suppressor #04 (Fits AGC, X19)", 5, 5],
+  ["Shared Suppressor #05 (Fits AGc, X19)", 5, 5],   ["Shared Pflash #05 (Fits 590)", 5, 5],
+  ["Shared Pflash #06 (Fits 590, X19)", 5, 5],   ["Shared Pflash #07 (Fits 590, X19)", 5, 5],
+  ["Shared Pflash #08 (Fits 590, X19)", 5, 5],   ["Shared 556mag #01 (Fits PM4)", 5, 5],
+  ["Shared 556mag #03 (Fits PM4)", 5, 5],   ["Shared 556mag #04 (Fits PM4)", 5, 5],
+  ["Shared Stock #03 (Fits PM4)", 5, 5],   ["Shared Stock #05 (fits PM4)", 5, 5],
+  ["Shared Stock #08 (Fits PM4)", 5, 5],   ["Shared Stock #10 (Fits PM4)", 5, 5],
+  ["Shared Stock #12 (Fit PM4)", 5, 5],   ["Shared Flashligt 07a (Fits PM4)", 5, 5],
+  ["Shared Grip #19 (Fits PM4)", 5, 5],   ["Shared Grip #17 (Fits PM4)", 5, 5],
+  ["Shared Grip #07 (Fits PM4)", 5, 5],   ["Shared Grip #14 (Fits PM4)", 5, 5],
+  ["Shared Grip #12 (Fits PM4)", 5, 5],   ["Shared suppressor #14 (Fits PM4)", 5, 5],
+  ["Shared Suppressor #19 (Fits PM4)", 5, 5],   ["Shared Suppressor #21 (Fits PM4)", 5, 5]
+];
+
+/* ---------- POMPIER ---------- */
+const ITEMS_POMPIER = [
+  ["Tablette", 100, 300],   ["Radio", 100, 125],
+  ["Scie Circulaire", 5, 2500],   ["Halligan", 5, 3500],
+  ["défibrillateur", 50, 2500],   ["Garrot", 50, 100],
+  ["Colier Cervical", 5, 250],   ["Poche de froid", 50, 150],
+  ["Gaze Hémostatique", 50, 200],   ["Gaze Méchage", 5, 30],
+  ["Pansement Absorbant", 50, 30],   ["Pansement Adhésif", 50, 30],
+  ["Pansement Compressif", 50, 200],   ["Pansement Hydrogel", 50, 15],
+  ["Sutures Adhésives", 50, 25],   ["Masque 02", 5, 20],
+  ["Moniteur ECG", 50, 2000],   ["Dispositif de Massage Cardiaque LUCAS 3", 50, 3200]
+];
+
+/* ---------- RESTO ---------- */
+const ITEMS_RESTO = [
+  ["Pomme d'Amour", 180, 2],   ["Café", 20, 2],
+  ["Verre Vide", 50, 2],   ["Boite Burger Vide", 10, 2],
+  ["Sachet Vide", 2, 2],   ["Crème Brulé", 180, 2],
+  ["Châtaigne Crue", 180, 15],   ["Cacao Chaud", 180, 2],
+  ["Flûte à Champagne", 5, 2],   ["Sac de Glace", 30, 2],
+  ["Pain de Viande de Noel", 5, 15],   ["Pain au Chocolat", 180, 2],
+  ["Papier Vierge", 10, 2],   ["Boite de Pizza", 100, 2],
+  ["Verre à Shot", 5, 2],   ["Oignon", 1, 11],
+  ["sauce Tomate", 100, 2],   ["Boite Frites Vide", 10, 2],
+  ["Menu Enfant Vide", 10, 2],   ["Sachet vide", 2, 2],
+  ["Verre à Whisky", 5, 2],   ["Verre à Vin", 5, 2],
+  ["Frites Surgelées", 1, 2],   ["huile de Tournesol", 1, 2],
+  ["Baguette", 20, 2],   ["caviar", 100, 100],
+  ["Châtaigne Crue", 180, 2],   ["Pain de Burger", 25, 2],
+  ["Emballage de Chips", 200, 2],   ["Bouteille d'Eau", 50, 2]
+];
+
+/* ---------- SUPÉRETTE ---------- */
+const ITEMS_SUPERETTE = [
+  ["Paquet de Cigarettes Redwood", 5, 2],   ["Paquet de Cigarette Marlboro", 50, 2],
+  ["Briquet Classique", 5, 2],   ["Briquet en Or", 5, 2],
+  ["Liquide Cerise", 5, 2],   ["Liquide Myrtille", 5, 2],
+  ["Cigare Cubain", 5, 3],   ["Vape", 5, 4],
+  ["Puff", 5, 3],   ["Corde", 5, 10],
+  ["Lingette de Spray", 5, 4],   ["Spray", 5, 4],
+  ["Sac à dos", 5, 5],   ["Attache de serrage", 20, 1],
+  ["Corde Atm", 5, 10],   ["Pinces", 5, 1],
+  ["Briquet", 5, 1],   ["Jeu de Tournevis", 5, 1],
+  ["Chalumeau", 5, 1],   ["Run-Booster", 5, 1],
+  ["Protéine", 5, 1],   ["Glass Cutter", 5, 1],
+  ["Cable Cutter", 5, 1],   ["Outils", 5, 1],
+  ["Imprimante", 5, 1],   ["Porte Clés", 5, 100],
+  ["Papier Vierge", 10, 1],   ["Kit Electronique", 30, 10],
+  ["Parachute", 1000, 100]
+];
+
+/* ---------- VIANDE ---------- */
+const ITEMS_VIANDE = [
+  ["Viande hachée", 25, 18],   ["Poulet Cru", 300, 5],
+  ["Poulet Carcasse", 25, 12],   ["Œuf", 10, 10],
+  ["Saucisse", 1, 5],   ["Saucisse de francfort", 10, 10],
+  ["Thon", 10, 15]
+];
+
+/* ==============================================================
+   2) LES POINTS DE LA CARTE & ACCÈS PAR RÔLE / MÉTIER
+   ============================================================== */
+const POINTS = [
+  { id: "boissons", nom: "Boissons", zone: "Waremme", prop: "1021",
+    detail: "Paleto Blvd // Route 1, bord de route côté colline",
+    sections: [{ titre: "Boissons", items: ITEMS_BOISSONS }] },
+
+  { id: "mecano", nom: "Mécano", zone: "Waremme", prop: "1063",
+    detail: "Paleto Bay, près de la 1012",
+    sections: [{ titre: "Mécano", items: ITEMS_MECANO }] },
+
+  { id: "medical", nom: "Médical", zone: "Herstal", prop: "2060",
+    detail: "Humane Labs Research",
+    sections: [{ titre: "Médical", items: ITEMS_MEDICAL }] },
+
+  { id: "police", nom: "Police", zone: "Amay", prop: "5005 / 5006",
+    detail: "Aéroport (entre la 5005 et la 5006)",
+    sections: [{ titre: "Armurerie & équipement", items: ITEMS_POLICE },
+               { titre: "Accessoires d'armes",    items: ITEMS_POLICE_ACC }] },
+
+  { id: "pompier", nom: "Pompier", zone: "Outremeuse", prop: "8141",
+    detail: "Vespucci Boulevard, secteur Little Seoul",
+    sections: [{ titre: "Pompier", items: ITEMS_POMPIER }] },
+
+  { id: "resto", nom: "Resto", zone: "Waremme", prop: "1079",
+    detail: "Procopio Promenade, entre la 1078 et la 1080",
+    sections: [{ titre: "Resto", items: ITEMS_RESTO }] },
+
+  { id: "superette", nom: "Supérette", zone: "Waremme", prop: "1052",
+    detail: "Paleto Boulevard / Pyrite Avenue, près de la 1024",
+    sections: [{ titre: "Supérette", items: ITEMS_SUPERETTE }] },
+
+  { id: "viande", nom: "Viande", zone: "Sclessin", prop: "9011",
+    detail: "La Puerta / Autopia Parkway, près de la 9010 et de la 9012",
+    aConfirmer: true,
+    sections: [{ titre: "Viande", items: ITEMS_VIANDE }] }
+];
+
+function selectedCompanyObj() {
+  const el = document.getElementById("company");
+  if (el && el.value !== "" && COMPANIES[el.value]) return COMPANIES[el.value];
+  if (currentUser && currentUser.type === "client" && currentUser.company) {
+    return COMPANIES.find(c => c.nom === currentUser.company) || null;
+  }
+  return null;
+}
+
+/* Multiplicateur exact du catalogue initial : x1.5 Beeker's, x4 Particulier, x2 par défaut */
+const multFor = () => {
+  const c = selectedCompanyObj();
+  if (c && c.nom === "Particulier") return 4;
+  return (c && c.mult) || PRICE_MULTIPLIER;
+};
+
+/* Mise à plat des items */
+const ENTRIES = [];
+POINTS.forEach(p => p.sections.forEach((s, si) => s.items.forEach(([name, weight, base, note], i) => {
+  ENTRIES.push({
+    key: `${p.id}|${si}|${i}`,
+    name, weight, base, note: note || "",
+    get price() { return base == null ? null : base * multFor(); },
+    point: p, section: s.titre, multi: p.sections.length > 1
+  });
+})));
+
+const countOf = (p) => ENTRIES.filter(e => e.point === p).length;
+
+/**
+ * Vérifie si un point de vente est accessible selon le rôle actif :
+ * - Compte non connecté ou non validé : aucun accès.
+ * - Staff Employé, Manager, Co-patron, Patron (level >= 2) : accès à TOUTES les catégories.
+ * - Staff Recrue (level === 1) : accès à tout SAUF services publics (police, pompier, medical). Mécano est autorisé.
+ * - Compte Entreprise (Client) : accès selon CLIENT_POINT_RESTRICTIONS de son entreprise.
+ */
+function canAccessPoint(pointId) {
+  if (!hasSiteAccess()) return false;
+
+  if (currentUser.type === "staff") {
+    const lvl = userLevel();
+    if (lvl >= 2) return true; // Patron, Co-patron, Manager, Employé : accès total à toutes les catégories
+    if (lvl === 1) {
+      // Recrue : tout sauf les services publics (Police, Pompier, Médical)
+      return !RECRUE_BLOCKED_PUBLIC_SERVICES.includes(pointId);
+    }
+    return false;
+  }
+
+  // Compte Entreprise (Client)
+  const allowedList = CLIENT_POINT_RESTRICTIONS[pointId];
+  if (!allowedList) return true; // Boissons, Resto, Supérette, Viande
+  const c = selectedCompanyObj();
+  const compName = c ? c.nom : (currentUser.company || "");
+  return allowedList.includes(compName);
+}
+
+function visiblePoints() {
+  return POINTS.filter(p => canAccessPoint(p.id));
+}
+
+function visibleEntries() {
+  return ENTRIES.filter(e => canAccessPoint(e.point.id));
+}
+
+/* Icônes des produits */
+const POINT_ICON = { boissons:"🍾", mecano:"🔧", medical:"🩺", police:"🛡️", pompier:"🚒", resto:"🍔", superette:"🛒", viande:"🥩" };
+const KEYWORD_ICONS = [
+  [/champagne/i,"🍾"], [/vin|whisky|alcool|pastis|martini|liqueur/i,"🍷"], [/bi[èe]re/i,"🍺"],
+  [/verre|flûte/i,"🥂"], [/thé glacé|limonade|eau|sirop/i,"🥤"],
+  [/pneu|jeu de roues/i,"🛞"], [/moteur|turbo|bougie|huile|filtre|frein|transmission|bo[îi]te de vitesses/i,"⚙️"],
+  [/batterie|électr/i,"🔋"], [/peinture|cire|céramique|nettoyage/i,"🎨"],
+  [/sang|injecteur|propofol|fentanyl|kétamine|acide/i,"💉"], [/pansement|gaze|bandage|garrot|suture|compresse/i,"🩹"],
+  [/défibrillateur|ecg/i,"❤️"], [/tablette|radar|drone|appareil|scanner/i,"📱"], [/radio|micro/i,"📻"],
+  [/sniper|rifle|pistol|carbine|pdw|x19|aeg|pm4|launcher|tazer|scope|silencieux|suppress|mag |stock|grip/i,"🔫"],
+  [/9mm|5\.56|7\.62|round/i,"🔸"], [/vest|plaque|bouclier/i,"🦺"], [/menotte|serrage|attaches/i,"⛓️"],
+  [/lampe|lumi|flashlight/i,"🔦"], [/parachute/i,"🪂"],
+  [/pizza|burger|frite|pain|baguette|crème|cacao|café|pomme|châtaigne|oignon|sauce|caviar/i,"🍽️"],
+  [/viande|poulet|saucisse|thon|œuf/i,"🥩"], [/cigar|vape|puff|briquet/i,"🚬"],
+  [/corde|pince|tournevis|chalumeau|outil|cutter/i,"🧰"], [/sac/i,"🎒"], [/imprimante|papier/i,"🖨️"], [/scie|halligan/i,"🪓"]
+];
+const iconOf = (e) => { const k = KEYWORD_ICONS.find(([re]) => re.test(e.name)); return k ? k[1] : (POINT_ICON[e.point.id] || "📦"); };
+const hueOf = (p) => (POINTS.indexOf(p) * 47 + 20) % 360;
+
+/* ==============================================================
+   3) UTILITAIRES & FORMATAGE (EUROPE/BRUSSELS)
+   ============================================================== */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const fmtMoney = (n) => n == null ? "—" : Number(n).toLocaleString("fr-FR", { maximumFractionDigits: 2 }) + " €";
+const fmtWeight = (g) => g == null ? "—" : (g >= 1000 ? (g / 1000).toLocaleString("fr-FR") + " kg" : g + " g");
+const fmtDateBrussels = (t) => new Date(t || Date.now()).toLocaleString("fr-BE", {
+  timeZone: "Europe/Brussels",
+  day: "2-digit", month: "2-digit", year: "numeric",
+  hour: "2-digit", minute: "2-digit", second: "2-digit"
+});
+const numLabel = (o) => "#" + String(o.num || 1).padStart(3, "0");
+const newKey = (prefix) => prefix + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const WEBHOOK_RE = /^https:\/\/(canary\.|ptb\.)?(discord|discordapp)\.com\/api\/webhooks\//;
+const webhookOf = (name) => (COMPANIES.find(c => c.nom === name) || {}).webhook || "";
+
+let busy = false;
+function setBusy(b) { busy = b; document.body.classList.toggle("busy", b); }
+
+let toastTimer;
+function toast(msg, ok = true) {
+  const t = $("toast");
+  t.hidden = false;
+  t.className = ok ? "ok" : "err";
+  t.textContent = msg;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 5000);
+}
+
+/* ==============================================================
+   4) COMPTES (SANS COMPTES PAR DÉFAUT), ÉJECTION INSTANTANÉE & RBAC
+   ============================================================== */
+const LS_USERS_KEY   = "gp_users_v3";
+const LS_SESSION_KEY = "gp_session_v3";
+const LS_ORDERS_KEY  = "gp_commandes_v1";
+
+let users = [];
+let currentUser = null;
+
+function normalizeUser(u) {
+  return {
+    id: u.id,
+    username: u.username,
+    password: u.password,
+    type: u.type || "staff",
+    role: u.role || "recrue",
+    firstName: u.firstName || "",
+    lastName: u.lastName || "",
+    company: u.company || "Go Postal",
+    phone: u.phone || "",
+    validated: Boolean(u.validated)
+  };
+}
+
+function loadLocalUsers() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(LS_USERS_KEY) || "null");
+    if (Array.isArray(raw)) return raw.filter(u => u && u.username).map(normalizeUser);
+  } catch (e) {}
+  return [];
+}
+
+function saveLocalUsers(list) {
+  users = list.filter(u => u && u.username).map(normalizeUser);
+  try { localStorage.setItem(LS_USERS_KEY, JSON.stringify(users)); } catch (e) {}
+}
+
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem(LS_SESSION_KEY) || "null");
+    if (s && s.id) {
+      currentUser = normalizeUser(s);
+    }
+  } catch (e) {}
+}
+
+function saveSession(user) {
+  currentUser = user ? normalizeUser(user) : null;
+  try {
+    if (currentUser) localStorage.setItem(LS_SESSION_KEY, JSON.stringify(currentUser));
+    else localStorage.removeItem(LS_SESSION_KEY);
+  } catch (e) {}
+  applyRBAC();
+}
+
+/* Vérifications strictes d'accès au site */
+const hasSiteAccess = (u = currentUser) => Boolean(u && u.validated === true);
+const userLevel     = () => hasSiteAccess() ? (ROLES[currentUser.role]?.level ?? 0) : -1;
+const isStaff       = () => userLevel() >= 1;
+const isBoss        = () => userLevel() >= 4; // Co-patron (4) et Patron (5)
+const fullName      = (u = currentUser) => u ? `${u.firstName} ${u.lastName}`.trim() : "";
+
+function roleBadgeHtml(roleId, validated = true) {
+  if (!validated) {
+    return `<span class="role-badge role-pending">⛔ Suspendu / En attente</span>`;
+  }
+  const r = ROLES[roleId] || ROLES.client;
+  return `<span class="role-badge ${r.badge}">${esc(r.label)}</span>`;
+}
+
+/* Éjecte immédiatement l'utilisateur et bloque tout le site */
+function kickUserImmediately(reasonMsg) {
+  Object.keys(cart).forEach(k => delete cart[k]);
+  saveSession(null);
+  const lockBox = $("authLockNotice");
+  if (lockBox) {
+    lockBox.hidden = false;
+    lockBox.textContent = reasonMsg;
+  }
+  toast(reasonMsg, false);
+  location.hash = "#auth";
+  showPage();
+}
+
+/* Nettoie du panier tous les articles appartenant à un point non autorisé */
+function purgeRestrictedCartItems() {
+  let purged = false;
+  Object.keys(cart).forEach(key => {
+    const pointId = key.split("|")[0];
+    if (!canAccessPoint(pointId)) {
+      delete cart[key];
+      purged = true;
+    }
+  });
+  if (activeTab !== "overview" && activeTab !== "all" && !canAccessPoint(activeTab)) {
+    activeTab = "overview";
+  }
+  if (purged && currentPage === "catalogue") renderCatalog();
+}
+
+/* Met à jour toute l'interface selon le compte et le rôle actif */
+function applyRBAC() {
+  const access = hasSiteAccess();
+  const lvl = userLevel();
+
+  // Si aucun compte ou compte suspendu/non validé : navigation principale totalement masquée
+  $("mainnav").hidden = !access;
+
+  if (access) {
+    $("navMyOrders").hidden = false;
+    $("navDispatch").hidden = lvl < 1; // Staff validé uniquement
+    $("navStats").hidden    = lvl < 4; // Co-patron & Patron
+    $("navAdmin").hidden    = lvl < 4; // Co-patron & Patron
+  }
+
+  // Compteur de comptes en attente / suspendus pour le Patron et le Co-patron
+  const pendingUsersCount = users.filter(u => !u.validated).length;
+  const badge = $("pendingCountBadge");
+  if (badge) {
+    badge.hidden = pendingUsersCount === 0;
+    badge.textContent = String(pendingUsersCount);
+  }
+
+  // Message d'aide à l'inscription si la base est vide (0 utilisateur)
+  const hint = $("registerHintText");
+  if (hint) {
+    if (users.length === 0) {
+      hint.innerHTML = `✨ <b>Aucun compte n'existe encore dans la base :</b> le premier compte créé sera automatiquement défini comme <b>Patron (validé)</b>. Tous les suivants seront créés <b>en attente d'autorisation</b>.`;
+    } else {
+      hint.innerHTML = `Tout nouveau compte est créé <b>en attente d'autorisation</b>. Tant que le Patron ou le Co-patron ne l'a pas validé, l'accès au site reste bloqué.`;
+    }
+  }
+
+  // Widget utilisateur en haut à droite
+  if (currentUser && access) {
+    const badgeHtml = currentUser.type === "client"
+      ? `<span class="role-badge role-client">🏢 ${esc(currentUser.company)}</span>`
+      : roleBadgeHtml(currentUser.role, true);
+
+    $("userWidget").innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--border);padding:5px 10px;border-radius:999px;font-size:.83rem">
+        <span>👤 <b>${esc(fullName())}</b></span>
+        ${badgeHtml}
+        <button class="btn ghost sm" id="logoutBtn" type="button" style="padding:3px 8px">Déconnexion</button>
+      </div>`;
+    $("logoutBtn").addEventListener("click", () => {
+      saveSession(null);
+      toast("Déconnecté.", true);
+      location.hash = "#auth";
+      showPage();
+    });
+  } else {
+    $("userWidget").innerHTML = `<span style="color:var(--muted);font-size:.82rem">🔒 Accès restreint</span>`;
+  }
+
+  // Synchronisation du sélecteur d'entreprise dans le Catalogue
+  if ($("company") && access) {
+    $("firstName").value = currentUser.firstName || $("firstName").value;
+    $("lastName").value  = currentUser.lastName  || $("lastName").value;
+    if (currentUser.phone && !$("phone").value) $("phone").value = currentUser.phone;
+
+    if (currentUser.type === "client") {
+      const compIdx = COMPANIES.findIndex(c => c.nom === currentUser.company);
+      if (compIdx !== -1) {
+        $("company").value = String(compIdx);
+        $("company").disabled = true; // Entreprise imposée par le Patron/Co-patron
+      }
+    } else {
+      $("company").disabled = false; // Le Staff peut choisir pour quelle entreprise il commande
+    }
+    updatePhoneRequirement();
+    purgeRestrictedCartItems();
+  }
+
+  if (lvl >= 1 && $("dispatchPermsHint")) {
+    const r = ROLES[currentUser.role];
+    $("dispatchPermsHint").innerHTML = `Connecté en tant que <b>${esc(fullName())}</b> (${roleBadgeHtml(currentUser.role, true)}) — ${esc(r.desc)}`;
+  }
+
+  renderHierarchy();
+  if (currentPage === "catalogue" && access) renderCatalog();
+  renderMaintenanceUI();
+}
+
+/* ==============================================================
+   5) STOCKAGE PARTAGÉ FIREBASE REALTIME DATABASE + LOCALSTORAGE
+   ============================================================== */
+const SHARED = FIREBASE_URL.trim() !== "";
+const isValidOrder = (o) => o && o.id && o.num && o.company && STATUS_BY_ID[o.status] && o.created;
+
+function lsReadOrders() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LS_ORDERS_KEY) || "null");
+    if (d && Array.isArray(d.orders)) return { next: d.next || d.orders.length + 1, orders: d.orders };
+  } catch (e) {}
+  return { next: 1, orders: [] };
+}
+function lsWriteOrders(d) {
+  try { localStorage.setItem(LS_ORDERS_KEY, JSON.stringify(d)); } catch (e) {}
+}
+
+const fbUrl = (path) => FIREBASE_URL.trim().replace(/\/+$/, "") + "/" + DB_PATH + (path ? "/" + path : "") + ".json";
+async function fbRaw(method, path, body, headers) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 10000);
+  try {
+    return await fetch(fbUrl(path), {
+      method, signal: ctrl.signal,
+      headers: Object.assign(body !== undefined ? { "Content-Type": "application/json" } : {}, headers || {}),
+      body: body !== undefined ? JSON.stringify(body) : undefined
+    });
+  } catch (e) {
+    throw new Error(e.name === "AbortError" ? "délai dépassé" : "connexion impossible");
+  } finally { clearTimeout(timer); }
+}
+async function fb(method, path, body) {
+  const res = await fbRaw(method, path, body);
+  if (!res.ok) {
+    let d = ""; try { d = (await res.text()).slice(0, 120); } catch (e) {}
+    throw new Error("Firebase erreur " + res.status + (d ? " – " + d : ""));
+  }
+  return res.json();
+}
+
+// État de maintenance partagé entre tous les visiteurs via Firebase Realtime Database.
+let maintenanceEnabled = false;
+let maintenanceReason = "";
+function renderMaintenanceUI() {
+  const blocked = maintenanceEnabled && hasSiteAccess() && !isBoss();
+  const overlay = $("maintenanceOverlay");
+  if (overlay) overlay.hidden = !blocked;
+  const status = $("maintenanceStatus");
+  if (status) status.textContent = maintenanceEnabled ? "🔴 Maintenance activée — le site est bloqué pour les comptes non-dirigeants." : "🟢 Site en fonctionnement normal.";
+  const button = $("maintenanceToggle");
+  if (button) {
+    button.textContent = maintenanceEnabled ? "Désactiver la maintenance" : "Activer la maintenance";
+    button.style.background = maintenanceEnabled ? "#2e9d68" : "#ff7a1a";
+  }
+}
+async function loadMaintenanceState() {
+  if (!SHARED) { renderMaintenanceUI(); return; }
+  try {
+    const value = await fb("GET", "maintenance");
+    maintenanceEnabled = Boolean(value && value.enabled);
+    maintenanceReason = value && value.reason ? String(value.reason) : "";
+  } catch (e) {
+    console.warn("Impossible de lire le mode maintenance:", e);
+  }
+  renderMaintenanceUI();
+}
+async function notifyMaintenanceDiscord(enabled, updatedBy, updatedAt) {
+  const url = String(DISCORD_MAINTENANCE_WEBHOOK_URL || "").trim();
+  if (!url || !WEBHOOK_RE.test(url)) {
+    console.info("Webhook Discord de maintenance non configuré : notification ignorée.");
+    return { ok: false, skipped: true };
+  }
+
+  const dateText = new Date(updatedAt).toLocaleString("fr-BE", {
+    timeZone: "Europe/Brussels",
+    dateStyle: "short",
+    timeStyle: "short"
+  });
+  const active = Boolean(enabled);
+  const payload = {
+    username: "Go Postal — Maintenance",
+    embeds: [{
+      title: active ? "🛠️ Maintenance activée" : "✅ Maintenance désactivée",
+      description: active
+        ? "Le site Go Postal Liège City est temporairement en maintenance."
+        : "Le site Go Postal Liège City est de nouveau accessible.",
+      color: active ? 0xFF7A1A : 0x2E9D68,
+      fields: [
+        { name: "État", value: active ? "🔴 Site en maintenance" : "🟢 Site opérationnel", inline: true },
+        { name: "Modifié par", value: String(updatedBy || "Direction").slice(0, 1000), inline: true },
+        { name: "Date et heure", value: dateText, inline: false }
+      ],
+      footer: { text: "Go Postal Liège City · Maintenance" },
+      timestamp: new Date(updatedAt).toISOString()
+    }]
+  };
+
+  try {
+    await postWebhook(url, payload);
+    return { ok: true };
+  } catch (error) {
+    console.warn("Notification Discord de maintenance impossible :", error);
+    return { ok: false, error: error.message };
+  }
+}
+
+async function setMaintenanceState(enabled) {
+  if (!isBoss()) throw new Error("Action réservée au Patron et au Co-patron.");
+  if (!SHARED) throw new Error("Firebase doit être configuré pour partager la maintenance avec tous les visiteurs.");
+
+  const updatedAt = Date.now();
+  const updatedBy = (typeof fullName === "function" ? fullName() : "")
+    || (currentUser && currentUser.username)
+    || "Direction";
+  const nextState = Boolean(enabled);
+
+  await fb("PUT", "maintenance", { enabled: nextState, updatedAt, updatedBy });
+  maintenanceEnabled = nextState;
+  renderMaintenanceUI();
+
+  // Une panne Discord ne doit pas annuler le changement de maintenance enregistré dans Firebase.
+  await notifyMaintenanceDiscord(nextState, updatedBy, updatedAt);
+}
+
+function normalizeOrders(raw) {
+  if (!raw) return [];
+  return Object.entries(raw).map(([id, o]) => ({
+    id,
+    num: o.num,
+    company: o.company,
+    contact: o.contact || "",
+    firstName: o.firstName || "",
+    lastName: o.lastName || "",
+    phone: o.phone || "",
+    note: o.note || "",
+    content: o.content || "",
+    items: Array.isArray(o.items) ? o.items : [],
+    totalQty: o.totalQty || 0,
+    totalWeight: o.totalWeight || 0,
+    employee: o.employee || "",
+    amount: o.amount == null ? null : Number(o.amount),
+    status: STATUS_BY_ID[o.status] ? o.status : "processing",
+    created: o.created,
+    createdBrussels: o.createdBrussels || fmtDateBrussels(o.created),
+    updated: o.updated || o.created,
+    by: o.by || "",
+    userId: o.userId || "",
+    archived: o.archived === true,          /* ← conservé (avant : perdu au rechargement, d'où l'archivage "invisible") */
+    archivedAt: o.archivedAt || null,
+    history: Object.values(o.history || {}).sort((a, b) => a.at - b.at)
+  })).filter(isValidOrder).sort((a, b) => b.created - a.created);
+}
+const histObj = (arr) => Object.fromEntries((arr || []).map((h, i) => [newKey("h") + i, h]));
+
+const store = {
+  async loadOrders() {
+    if (!SHARED) return lsReadOrders().orders.slice().sort((a, b) => b.created - a.created);
+    const list = normalizeOrders(await fb("GET", "orders"));
+    lsWriteOrders({ next: Math.max(...list.map(o => o.num), 0) + 1, orders: list });
+    return list;
+  },
+
+  async loadUsers() {
+    if (!SHARED) return loadLocalUsers();
+    const remote = await fb("GET", "users");
+    if (!remote || typeof remote !== "object") {
+      saveLocalUsers([]);
+      return [];
+    }
+    const list = Object.values(remote).filter(u => u && u.username).map(normalizeUser);
+    saveLocalUsers(list);
+    return list;
+  },
+
+  async saveUser(user) {
+    const norm = normalizeUser(user);
+    const list = loadLocalUsers().filter(u => u.id !== norm.id);
+    list.push(norm);
+    saveLocalUsers(list);
+    if (SHARED) {
+      await fb("PUT", "users/" + norm.id, norm);
+    }
+  },
+
+  async deleteUser(userId) {
+    const list = loadLocalUsers().filter(u => u.id !== userId);
+    saveLocalUsers(list);
+    if (SHARED) {
+      await fb("DELETE", "users/" + userId);
+    }
+  },
+
+  async nextNum() {
+    if (!SHARED) {
+      const d = lsReadOrders(); const n = d.next; d.next = n + 1; lsWriteOrders(d); return n;
+    }
+    try {
+      for (let i = 0; i < 6; i++) {
+        const g = await fbRaw("GET", "counter", undefined, { "X-Firebase-ETag": "true" });
+        const etag = g.headers.get("ETag");
+        const cur = Number(await g.json()) || 0;
+        if (!g.ok || !etag) throw new Error("pas d'ETag");
+        const p = await fbRaw("PUT", "counter", cur + 1, { "if-match": etag });
+        if (p.ok) return cur + 1;
+        if (p.status !== 412) throw new Error("écriture refusée");
+      }
+    } catch (e) {}
+    const list = await this.loadOrders();
+    const counter = Number(await fb("GET", "counter")) || 0;
+    const n = Math.max(counter, ...list.map(o => o.num), 0) + 1;
+    await fb("PUT", "counter", n);
+    return n;
+  },
+
+  async claim(num) {
+    if (!SHARED) return num;
+    const list = await this.loadOrders();
+    if (!list.some(o => o.num === num)) return num;
+    const n = Math.max(...list.map(o => o.num), 0) + 1;
+    const counter = Number(await fb("GET", "counter")) || 0;
+    await fb("PUT", "counter", Math.max(n, counter));
+    return n;
+  },
+
+  async createOrder(o) {
+    const d = lsReadOrders();
+    d.orders.unshift(o);
+    d.next = Math.max(d.next, o.num + 1);
+    lsWriteOrders(d);
+    if (SHARED) {
+      const { id, ...rest } = o;
+      await fb("PUT", "orders/" + id, { ...rest, history: histObj(o.history) });
+    }
+  },
+
+  async setStatus(id, status, entry) {
+    const d = lsReadOrders();
+    const localO = d.orders.find(x => x.id === id);
+    const { k, ...h } = entry;
+    if (localO) {
+      localO.status = status;
+      localO.updated = entry.at;
+      localO.history = localO.history || [];
+      localO.history.push(h);
+      lsWriteOrders(d);
+    }
+    if (SHARED) {
+      await fb("PATCH", "", {
+        ["orders/" + id + "/status"]: status,
+        ["orders/" + id + "/updated"]: entry.at,
+        ["orders/" + id + "/history/" + k]: h
+      });
+    }
+  },
+
+  async updateFields(id, fields) {
+    const d = lsReadOrders();
+    const localO = d.orders.find(x => x.id === id);
+    if (localO) { Object.assign(localO, fields); lsWriteOrders(d); }
+    if (SHARED) await fb("PATCH", "orders/" + id, fields);
+  },
+
+  async removeOrder(id) {
+    const d = lsReadOrders();
+    d.orders = d.orders.filter(x => x.id !== id);
+    lsWriteOrders(d);
+    if (SHARED) await fb("DELETE", "orders/" + id);
+  },
+
+  async addMissing(list) {
+    const existing = await this.loadOrders();
+    const have = new Set(existing.map(o => o.id));
+    let n = 0, max = 0;
+    for (const o of list) {
+      if (!isValidOrder(o) || have.has(o.id)) continue;
+      await this.createOrder(o);
+      max = Math.max(max, o.num);
+      n++;
+    }
+    if (SHARED && max > 0) {
+      const counter = Number(await fb("GET", "counter")) || 0;
+      if (max > counter) await fb("PUT", "counter", max);
+    }
+    return n;
+  }
+};
+
+let orders = [];
+let lastSnapshot = null;
+
+function setSync(state, msg) {
+  const el = $("sync");
+  if (!SHARED) {
+    el.className = ""; el.textContent = "💾 Mode local";
+  } else if (state === "loading") {
+    el.className = ""; el.textContent = "⏳ Sync Firebase…";
+  } else if (state) {
+    el.className = "on";
+    el.textContent = "🟢 Firebase · " + new Date().toLocaleTimeString("fr-BE", { timeZone: "Europe/Brussels" });
+  } else {
+    el.className = "off";
+    el.textContent = "🔴 Hors-ligne (cache local)";
+    el.title = msg || "";
+  }
+}
+
+/* Vérifie en temps réel que la session active existe toujours et n'est pas suspendue */
+function verifyActiveSessionOrKick() {
+  if (!currentUser) return false;
+  const freshUser = users.find(u => u.id === currentUser.id);
+  if (!freshUser) {
+    kickUserImmediately("⛔ Ton compte a été supprimé par la direction. Tu n'as plus accès au site.");
+    return false;
+  }
+  if (!freshUser.validated) {
+    kickUserImmediately("⛔ Ton compte a été suspendu ou est en attente de validation. Accès au site verrouillé.");
+    return false;
+  }
+  if (JSON.stringify(freshUser) !== JSON.stringify(currentUser)) {
+    saveSession(freshUser);
+  }
+  return true;
+}
+
+async function refreshAll(quiet = false, force = false) {
+  try {
+    const [loadedOrders, loadedUsers] = await Promise.all([store.loadOrders(), store.loadUsers()]);
+    users = loadedUsers;
+
+    // Vérification immédiate : si le compte connecté a été supprimé ou suspendu, éjection instantanée
+    if (currentUser) {
+      const stillValid = verifyActiveSessionOrKick();
+      if (!stillValid) return false;
+    }
+
+    applyRBAC();
+    setSync(true);
+    const snap = JSON.stringify(loadedOrders) + "|" + JSON.stringify(users);
+    if (force || snap !== lastSnapshot) {
+      lastSnapshot = snap;
+      orders = loadedOrders;
+      renderCurrentPage();
+    }
+    return true;
+  } catch (e) {
+    orders = lsReadOrders().orders;
+    setSync(false, e.message);
+    if (!quiet) toast("Lecture Firebase impossible : " + e.message, false);
+    renderCurrentPage();
+    return false;
+  }
+}
+
+/* ==============================================================
+   6) AUTOMATISATION & INTÉGRATION DISCORD WEBHOOK (EMBED)
+   ============================================================== */
+async function postWebhook(url, payload) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) {
+    let detail = "";
+    try { detail = (await res.text()).slice(0, 140); } catch (e) {}
+    throw new Error("Discord a répondu " + res.status + (detail ? " – " + detail : ""));
+  }
+}
+
+async function sendCreationDiscordEmbed(order, lines = []) {
+  const st = STATUS_BY_ID[order.status] || STATUS_BY_ID.processing;
+  const targets = new Set();
+  if (WEBHOOK_RE.test(DISCORD_WEBHOOK_URL.trim())) targets.add(DISCORD_WEBHOOK_URL.trim());
+  const compUrl = webhookOf(order.company);
+  if (WEBHOOK_RE.test(compUrl)) targets.add(compUrl);
+
+  if (targets.size === 0) {
+    return { ok: false, error: "Aucun webhook Discord configuré." };
+  }
+
+  const noWeight = lines.filter(l => l.e.weight == null).length;
+  const fields = [
+    { name: "🆔 ID Commande", value: `**${numLabel(order)}**`, inline: true },
+    { name: "🏢 Entreprise",  value: order.company, inline: true },
+    { name: "📌 Statut initial", value: `${st.icon} **${st.label}**`, inline: true },
+    { name: "🕒 Date / Heure (Europe/Brussels)", value: order.createdBrussels, inline: true },
+    { name: "📦 Articles",   value: String(order.totalQty), inline: true },
+    { name: "💰 Total",      value: "**" + fmtMoney(order.amount) + "**", inline: true },
+    { name: "⚖️ Poids total", value: "**" + fmtWeight(order.totalWeight) + "**" + (noWeight ? "\n*(hors " + noWeight + " article" + (noWeight > 1 ? "s" : "") + " sans poids connu)*" : ""), inline: true },
+    { name: "👤 Prénom", value: order.firstName || "—", inline: true },
+    { name: "👤 Nom", value: order.lastName || "—", inline: true }
+  ];
+  if (order.company === "Particulier" || order.phone) {
+    fields.push({ name: "📞 Téléphone", value: order.phone || "—", inline: true });
+  }
+
+  const byPoint = [];
+  lines.forEach(l => {
+    let g = byPoint.find(x => x.point === l.e.point);
+    if (!g) { g = { point: l.e.point, rows: [], sub: 0 }; byPoint.push(g); }
+    g.rows.push(`\`${l.qty}×\` ${l.e.name} · ${fmtMoney(l.e.price)} → **${fmtMoney(l.total)}**`);
+    g.sub += l.total;
+  });
+
+  byPoint.forEach(g => {
+    const icon = POINT_ICON[g.point.id] || "📦";
+    let buf = "", part = 0;
+    const flush = () => {
+      if (!buf) return;
+      fields.push({
+        name: part === 0 ? `${icon} ${g.point.nom} — ${fmtMoney(g.sub)}` : `${icon} ${g.point.nom} (suite)`,
+        value: buf, inline: false
+      });
+      buf = ""; part++;
+    };
+    g.rows.forEach(r => { if ((buf + "\n" + r).length > 1000) flush(); buf = buf ? buf + "\n" + r : r; });
+    flush();
+  });
+
+  if (order.note) {
+    fields.push({ name: "📝 Remarque", value: order.note.slice(0, 1000), inline: false });
+  }
+
+  const groups = [];
+  let cur = [], size = 0;
+  fields.forEach(f => {
+    const s = f.name.length + f.value.length;
+    if (cur.length >= 25 || size + s > 5000) { groups.push(cur); cur = []; size = 0; }
+    cur.push(f); size += s;
+  });
+  if (cur.length) groups.push(cur);
+
+  try {
+    for (const targetUrl of targets) {
+      for (let i = 0; i < groups.length; i++) {
+        await postWebhook(targetUrl, {
+          username: SITE_NAME,
+          embeds: [{
+            title: i === 0
+              ? `🧾 Nouvelle commande ${numLabel(order)} – ${order.company}`
+              : `🧾 Suite de la commande ${numLabel(order)} – ${order.company} (${i + 1}/${groups.length})`,
+            description: i === 0 ? `Commande reçue depuis le site **${SITE_NAME}** (${order.createdBrussels}).` : undefined,
+            color: 0xF5A524,
+            fields: groups[i],
+            footer: { text: `${SITE_NAME} · ${order.totalQty} article${order.totalQty > 1 ? "s" : ""} · ${fmtMoney(order.amount)}` },
+            timestamp: new Date(order.created).toISOString()
+          }]
+        });
+      }
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+async function notifyStatusChangeDiscord(order, st) {
+  const targets = new Set();
+  if (WEBHOOK_RE.test(DISCORD_WEBHOOK_URL.trim())) targets.add(DISCORD_WEBHOOK_URL.trim());
+  const compUrl = webhookOf(order.company);
+  if (WEBHOOK_RE.test(compUrl)) targets.add(compUrl);
+
+  if (targets.size === 0) return { ok: false, error: "webhook non configuré pour « " + order.company + " »" };
+
+  try {
+    for (const url of targets) {
+      await postWebhook(url, {
+        username: SITE_NAME,
+        embeds: [{
+          title: `${st.icon} ${st.label}`,
+          color: st.color,
+          fields: order.amount != null ? [{ name: "💰 Montant total", value: "**" + fmtMoney(order.amount) + "**", inline: false }] : [],
+          footer: { text: `Commande ${numLabel(order)} · ${SITE_NAME}` },
+          timestamp: new Date().toISOString()
+        }]
+      });
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/* Véhicule requis selon le poids total (en grammes) */
+function vehicleForWeight(g) {
+  const w = Number(g) || 0;
+  if (w < VEHICLE_VAN_LIMIT_G)   return { icon: "🚐", label: "Camionnette", color: 0x60A5FA, over: false };
+  if (w <= VEHICLE_TRUCK_LIMIT_G) return { icon: "🚛", label: "Camion avec remorque (obligatoire)", color: 0xF5A524, over: false };
+  return { icon: "🚚", label: "Plusieurs véhicules nécessaires (poids supérieur à 950 kg)", color: 0xF87171, over: true };
+}
+
+/* Multiplicateur de prix d'une entreprise : x1.5 Beeker's, x4 Particulier, x2 par défaut */
+function companyMultiplier(name) {
+  if (name === "Particulier") return 4;
+  const c = COMPANIES.find(x => x.nom === name);
+  return (c && c.mult) || PRICE_MULTIPLIER;
+}
+
+/* Somme nécessaire pour préparer la commande = montant ÷ multiplicateur (retour au prix de base x1) */
+function prepCostOf(order) {
+  const m = companyMultiplier(order.company);
+  return { mult: m, cost: Math.round(((Number(order.amount) || 0) / m) * 100) / 100 };
+}
+
+/* Alerte envoyée aux employés à chaque nouvelle commande :
+   montant, véhicule nécessaire, matériel à préparer et somme nécessaire pour la préparer */
+async function notifyEmployeesNewOrder(order) {
+  const url = (WEBHOOK_RE.test(DISCORD_EMPLOYEES_WEBHOOK_URL.trim()) ? DISCORD_EMPLOYEES_WEBHOOK_URL
+            : WEBHOOK_RE.test(DISCORD_WEBHOOK_URL.trim()) ? DISCORD_WEBHOOK_URL : "").trim();
+  if (!url) {
+    console.warn("[Go Postal] Notif employés NON envoyée : renseigne DISCORD_EMPLOYEES_WEBHOOK_URL (webhook du salon des employés).");
+    return { ok: false, error: "Aucun webhook Discord employés configuré." };
+  }
+
+  const v = vehicleForWeight(order.totalWeight);
+  const prep = prepCostOf(order);
+  const items = order.items || [];
+  const noWeight = items.filter(i => i.weight == null).length;
+
+  const fields = [
+    { name: "💰 Montant de la commande", value: "**" + fmtMoney(order.amount) + "**", inline: true },
+    { name: "🧾 Somme pour préparer la commande", value: "**" + fmtMoney(prep.cost) + "**\n*(montant ÷ " + prep.mult.toLocaleString("fr-FR") + ")*", inline: true },
+    { name: "⚖️ Poids total", value: "**" + fmtWeight(order.totalWeight) + "**" + (noWeight ? "\n*(hors " + noWeight + " article" + (noWeight > 1 ? "s" : "") + " sans poids connu)*" : ""), inline: true },
+    { name: "🚗 Véhicule nécessaire", value: `${v.icon} **${v.label}**`, inline: false }
+  ];
+
+  // Matériel à préparer, regroupé par point et découpé pour respecter les limites de Discord
+  const byPoint = [];
+  items.forEach(i => {
+    let g = byPoint.find(x => x.point === i.point);
+    if (!g) { g = { point: i.point, rows: [] }; byPoint.push(g); }
+    g.rows.push(`\`${i.qty}×\` ${i.name}`);
+  });
+  byPoint.forEach(g => {
+    let buf = "", part = 0;
+    const flush = () => {
+      if (!buf) return;
+      fields.push({ name: part === 0 ? `📦 Matériel — ${g.point}` : `📦 Matériel — ${g.point} (suite)`, value: buf, inline: false });
+      buf = ""; part++;
+    };
+    g.rows.forEach(r => { if ((buf + "\n" + r).length > 1000) flush(); buf = buf ? buf + "\n" + r : r; });
+    flush();
+  });
+
+  const groups = [];
+  let cur = [], size = 0;
+  fields.forEach(f => {
+    const sz = f.name.length + f.value.length;
+    if (cur.length >= 25 || size + sz > 5000) { groups.push(cur); cur = []; size = 0; }
+    cur.push(f); size += sz;
+  });
+  if (cur.length) groups.push(cur);
+
+  try {
+    for (let i = 0; i < groups.length; i++) {
+      await postWebhook(url, {
+        username: SITE_NAME,
+        embeds: [{
+          title: i === 0 ? `🚚 Commande ${numLabel(order)} – ${order.company}` : `🚚 Suite de la commande ${numLabel(order)} – ${order.company} (${i + 1}/${groups.length})`,
+          description: i === 0 ? "Nouvelle commande à préparer : montant, matériel et véhicule nécessaire." : undefined,
+          color: v.color,
+          fields: groups[i],
+          footer: { text: `Commande ${numLabel(order)} · ${SITE_NAME}` },
+          timestamp: new Date().toISOString()
+        }]
+      });
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}
+
+/* ==============================================================
+   7) LOGIQUE DU CATALOGUE (RESTRICTIONS PAR GRADE/MÉTIER & MIN 5000€)
+   ============================================================== */
+let activeTab = "overview";
+const cart = {};
+
+function setQty(key, n) {
+  if (!hasSiteAccess()) return;
+  const pointId = key.split("|")[0];
+  if (!canAccessPoint(pointId)) {
+    toast("Tu n'as pas accès à cette catégorie d'articles.", false);
+    return;
+  }
+  n = Math.max(0, Math.min(9999, Math.floor(Number(n) || 0)));
+  if (n === 0) delete cart[key]; else cart[key] = n;
+  document.querySelectorAll(`[data-key="${CSS.escape(key)}"]`).forEach(card => {
+    card.classList.toggle("in-cart", n > 0);
+    const inp = card.querySelector("input.qty");
+    if (inp && document.activeElement !== inp) inp.value = n;
+  });
+  renderOrderPanel();
+}
+
+function renderTabs() {
+  const pts = visiblePoints();
+  const entries = visibleEntries();
+  let html = `<button class="tab ${activeTab === "overview" ? "active" : ""}" data-tab="overview">Aperçu</button>`;
+  pts.forEach(p => {
+    html += `<button class="tab ${activeTab === p.id ? "active" : ""}" data-tab="${p.id}">${esc(p.nom)}<span class="n">${countOf(p)}</span></button>`;
+  });
+  html += `<button class="tab ${activeTab === "all" ? "active" : ""}" data-tab="all">Tous les items<span class="n">${entries.length}</span></button>`;
+  $("tabs").innerHTML = html;
+}
+
+function renderOverview() {
+  const pts = visiblePoints();
+  $("overviewGrid").innerHTML = pts.map(p => `
+    <div class="card pt" data-tab="${p.id}">
+      <div class="thumb" style="--h:${hueOf(p)}">${POINT_ICON[p.id] || "📦"}</div>
+      <div class="nom">${esc(p.nom)}</div>
+      <div class="num">n° ${esc(p.prop)}</div>
+      <div class="zone">${esc(p.zone)}</div>
+      <div class="detail">${esc(p.detail)}</div>
+      <div class="row"><span>Items</span><span class="w">${countOf(p)}</span></div>
+      ${p.aConfirmer ? '<div class="flag">⚠ Association à confirmer</div>' : ""}
+    </div>`).join("");
+
+  let accessNote = "";
+  if (currentUser?.type === "staff") {
+    accessNote = userLevel() >= 2
+      ? `Accès Staff complet (${ROLES[currentUser.role].label}) : les 8 points sont débloqués`
+      : `Accès Recrue : ${pts.length} points accessibles (services publics Police, Pompier et Médical bloqués)`;
+  } else {
+    const comp = selectedCompanyObj();
+    accessNote = `${pts.length} point(s) accessible(s) pour « ${comp ? comp.nom : ""} »`;
+  }
+  $("overviewCount").textContent = accessNote;
+}
+
+function itemCardHtml(e) {
+  const label = e.point.nom + (e.multi ? " · " + e.section : "");
+  const q = cart[e.key] || 0;
+  const orderable = e.price != null;
+  return `
+    <div class="card ${q > 0 ? "in-cart" : ""}" data-key="${esc(e.key)}">
+      <div class="thumb" style="--h:${hueOf(e.point)}">${iconOf(e)}</div>
+      <div class="cat">${esc(label)}</div>
+      <div class="name">${esc(e.name)}</div>
+      <div class="row"><span>Poids</span><span class="w">${fmtWeight(e.weight)}</span></div>
+      <div class="row"><span>Prix</span><span class="${orderable ? "price" : "none"}">${fmtMoney(e.price)}</span></div>
+      ${e.note ? `<div class="note">${esc(e.note)}</div>` : ""}
+      ${orderable ? `
+        <div class="qtybox">
+          <button type="button" data-act="dec" aria-label="Retirer un">−</button>
+          <input class="qty" type="number" min="0" max="9999" value="${q}" inputmode="numeric" aria-label="Quantité">
+          <button type="button" data-act="inc" aria-label="Ajouter un">+</button>
+        </div>` : `<div class="none" style="font-size:.8rem">Non commandable</div>`}
+    </div>`;
+}
+
+function renderItems() {
+  if (activeTab !== "overview" && activeTab !== "all" && !canAccessPoint(activeTab)) {
+    activeTab = "overview";
+    renderCatalog();
+    return;
+  }
+
+  const q = $("search").value.trim().toLowerCase();
+  const sort = $("sort").value;
+  const point = visiblePoints().find(p => p.id === activeTab);
+
+  const banner = $("banner");
+  if (point) {
+    banner.hidden = false;
+    banner.innerHTML = `<span class="t">${esc(point.nom)}</span>
+      <span class="z">${esc(point.zone)} · n° ${esc(point.prop)}</span>
+      <span class="d">${esc(point.detail)}</span>
+      ${point.aConfirmer ? '<span class="flag">⚠ Association au point à confirmer</span>' : ""}`;
+  } else banner.hidden = true;
+
+  let list = visibleEntries().filter(e => (!point || e.point === point) && (q === "" || e.name.toLowerCase().includes(q)));
+
+  let html = "";
+  if (sort === "menu") {
+    const groups = [];
+    list.forEach(e => {
+      const key = e.point.id + "|" + e.section;
+      let g = groups.find(x => x.key === key);
+      if (!g) {
+        let titre = point ? (e.multi ? e.section : "") : e.point.nom + (e.multi ? " · " + e.section : "");
+        g = { key, titre, items: [] };
+        groups.push(g);
+      }
+      g.items.push(e);
+    });
+    html = groups.map(g =>
+      (g.titre ? `<h2 class="sec">${esc(g.titre)}<span>${g.items.length} items</span></h2>` : "") +
+      `<div class="grid">${g.items.map(itemCardHtml).join("")}</div>`
+    ).join("");
+  } else {
+    list.sort((a, b) => {
+      switch (sort) {
+        case "name":       return a.name.localeCompare(b.name, "fr");
+        case "priceDesc":  return (b.price ?? -1) - (a.price ?? -1);
+        case "priceAsc":   return (a.price ?? Infinity) - (b.price ?? Infinity);
+        case "weightDesc": return (b.weight ?? -1) - (a.weight ?? -1);
+      }
+      return 0;
+    });
+    html = `<div class="grid">${list.map(itemCardHtml).join("")}</div>`;
+  }
+
+  $("list").innerHTML = html;
+  $("count").textContent = `${list.length} item${list.length > 1 ? "s" : ""} affiché${list.length > 1 ? "s" : ""}`;
+  $("empty").hidden = list.length > 0;
+}
+
+function cartLines() {
+  return visibleEntries().filter(e => cart[e.key] > 0).map(e => ({ e, qty: cart[e.key], total: cart[e.key] * e.price }));
+}
+
+function renderOrderPanel() {
+  const lines = cartLines();
+  const totalQty = lines.reduce((s, l) => s + l.qty, 0);
+  const totalPrice = lines.reduce((s, l) => s + l.total, 0);
+  const totalWeight = lines.reduce((s, l) => s + l.qty * (l.e.weight || 0), 0);
+
+  if (lines.length === 0) {
+    $("orderLines").innerHTML = `<div class="no-lines">Ta commande est vide.<br>Ajoute des items avec les boutons + dans le catalogue.</div>`;
+  } else {
+    let html = "", current = null;
+    lines.forEach(({ e, qty, total }) => {
+      if (e.point.id !== current) { current = e.point.id; html += `<div class="group-title">${esc(e.point.nom)}</div>`; }
+      html += `
+        <div class="line">
+          <span class="ln">${esc(e.name)}</span><span class="lp">${fmtMoney(total)}</span>
+          <span class="ld">${qty} × ${fmtMoney(e.price)}</span>
+          <button class="lx" data-remove="${esc(e.key)}">Retirer</button>
+        </div>`;
+    });
+    $("orderLines").innerHTML = html;
+  }
+  $("totalQty").textContent = totalQty;
+  $("totalWeightLabel").textContent = fmtWeight(totalWeight);
+  $("totalPrice").textContent = fmtMoney(totalPrice);
+
+  // Encart & Règle Particulier (Minimum 5 000 €)
+  const co = selectedCompanyObj();
+  const isPrivate = co && co.nom === "Particulier";
+  const ruleBox = $("particulierRuleBox");
+  const sendBtn = $("send");
+
+  if (isPrivate) {
+    ruleBox.hidden = false;
+    const remaining = Math.max(0, PARTICULIER_MIN_ORDER - totalPrice);
+    if (totalPrice < PARTICULIER_MIN_ORDER) {
+      ruleBox.className = "rule-box invalid";
+      ruleBox.innerHTML = `⚠️ <b>Règle Particulier :</b> Le montant minimum d'une commande de particulier est de <b>${fmtMoney(PARTICULIER_MIN_ORDER)}</b>.<br>Il manque encore <b>${fmtMoney(remaining)}</b> pour débloquer l'envoi.`;
+    } else {
+      ruleBox.className = "rule-box valid";
+      ruleBox.innerHTML = `✅ <b>Règle Particulier respectée :</b> Le minimum de <b>${fmtMoney(PARTICULIER_MIN_ORDER)}</b> est atteint.`;
+    }
+  } else {
+    ruleBox.hidden = true;
+  }
+
+  if (!hasSiteAccess()) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "🔒 Compte non autorisé";
+  } else if (isPrivate && totalPrice < PARTICULIER_MIN_ORDER) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = `Minimum ${fmtMoney(PARTICULIER_MIN_ORDER)} requis (Particulier)`;
+  } else {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "Envoyer la commande sur Discord";
+  }
+
+  const fab = $("fab");
+  fab.classList.toggle("show", totalQty > 0 && currentPage === "catalogue" && hasSiteAccess());
+  fab.textContent = `🧾 Ma commande · ${totalQty} article${totalQty > 1 ? "s" : ""} · ${fmtMoney(totalPrice)}`;
+}
+
+function showCatalogStatus(msg, ok) {
+  const s = $("status");
+  s.hidden = false;
+  s.className = ok ? "ok" : "err";
+  s.textContent = msg;
+}
+
+async function submitCatalogOrder() {
+  await refreshAll(true);
+  if (!hasSiteAccess()) return;
+
+  const co = selectedCompanyObj();
+  const company = co ? co.nom : "";
+  const firstName = $("firstName").value.trim();
+  const lastName = $("lastName").value.trim();
+  const isPrivate = company === "Particulier";
+  const phone = $("phone").value.trim();
+  const note = $("note").value.trim();
+  const lines = cartLines();
+
+  if (!company) { $("company").focus(); return showCatalogStatus("Choisis ton entreprise dans la liste.", false); }
+  if (!firstName) { $("firstName").focus(); return showCatalogStatus("Le prénom est obligatoire.", false); }
+  if (!lastName) { $("lastName").focus(); return showCatalogStatus("Le nom est obligatoire.", false); }
+  if (isPrivate && !phone) { $("phone").focus(); return showCatalogStatus("Le numéro de téléphone est obligatoire pour un particulier.", false); }
+  if (lines.length === 0) return showCatalogStatus("Ta commande est vide.", false);
+
+  const totalQty = lines.reduce((s, l) => s + l.qty, 0);
+  const totalPrice = lines.reduce((s, l) => s + l.total, 0);
+  const totalWeight = lines.reduce((s, l) => s + l.qty * (l.e.weight || 0), 0);
+
+  if (isPrivate && totalPrice < PARTICULIER_MIN_ORDER) {
+    return showCatalogStatus(`Une commande de particulier doit être d'au moins ${fmtMoney(PARTICULIER_MIN_ORDER)}.`, false);
+  }
+
+  const contentSummary = lines.map(l => `${l.qty}x ${l.e.name} (${l.e.point.nom} - ${fmtMoney(l.total)})`).join("\n");
+  const serializedItems = lines.map(l => ({
+    name: l.e.name,
+    point: l.e.point.nom,
+    qty: l.qty,
+    unitPrice: l.e.price,
+    total: l.total,
+    weight: l.e.weight
+  }));
+
+  const btn = $("send");
+  btn.disabled = true;
+  btn.textContent = "Envoi en cours…";
+  setBusy(true);
+
+  try {
+    const num = await store.claim(await store.nextNum());
+    const now = Date.now();
+    const brusselsNow = fmtDateBrussels(now);
+
+    const newOrder = {
+      id: newKey("o"),
+      num,
+      company,
+      firstName,
+      lastName,
+      contact: `${firstName} ${lastName}`.trim(),
+      phone,
+      note,
+      content: contentSummary + (note ? `\n[Note: ${note}]` : ""),
+      items: serializedItems,
+      totalQty,
+      totalWeight,
+      amount: totalPrice,
+      employee: "",
+      status: "pending",
+      created: now,
+      createdBrussels: brusselsNow,
+      updated: now,
+      by: fullName(),
+      userId: currentUser.id,
+      history: []
+    };
+
+    const [discordRes] = await Promise.all([
+      sendCreationDiscordEmbed(newOrder, lines),
+      (async () => {
+        newOrder.history.push({
+          status: "pending",
+          at: now,
+          notified: true,
+          by: newOrder.by
+        });
+        await store.createOrder(newOrder);
+      })()
+    ]);
+
+    await refreshAll(true, true);
+
+    // Statut initial « En attente » : sa notification part un peu après le récap de la commande
+    if (discordRes.ok) {
+      setTimeout(() => { notifyStatusChangeDiscord(newOrder, STATUS_BY_ID.pending); }, 2000);
+    }
+    // Alerte employés : montant + véhicule nécessaire (camionnette / camion avec remorque)
+    setTimeout(() => { notifyEmployeesNewOrder(newOrder); }, 1000);
+
+    Object.keys(cart).forEach(k => delete cart[k]);
+    $("note").value = "";
+    renderCatalog();
+
+    if (discordRes.ok) {
+      showCatalogStatus(`✅ Commande ${numLabel(newOrder)} envoyée sur Discord et ajoutée au Dispatch !`, true);
+      toast(`Commande ${numLabel(newOrder)} envoyée sur Discord ✅`, true);
+    } else {
+      showCatalogStatus(`⚠️ Commande ${numLabel(newOrder)} enregistrée dans le Dispatch, mais erreur Discord : ${discordRes.error}`, false);
+    }
+  } catch (err) {
+    showCatalogStatus("Échec de l'envoi : " + err.message, false);
+  } finally {
+    setBusy(false);
+    renderOrderPanel();
+  }
+}
+
+function renderCatalog() {
+  if (!hasSiteAccess()) return;
+  const isOverview = activeTab === "overview";
+  $("overview").hidden = !isOverview;
+  $("itemsView").hidden = isOverview;
+  $("controls").hidden = isOverview || currentPage !== "catalogue";
+  $("tabs").hidden = currentPage !== "catalogue";
+  renderTabs();
+  if (isOverview) renderOverview(); else renderItems();
+  renderOrderPanel();
+}
+
+/* ==============================================================
+   8) GESTION DU DISPATCH & ACTIONS STAFF SELON LE RÔLE (RBAC)
+   ============================================================== */
+let filterStatus = "all";
+let dispatchView = "table";
+let archiveMode = false;
+
+async function changeOrderStatus(id, statusId) {
+  await refreshAll(true);
+  if (!isStaff()) return;
+  if (statusId === "cancelled" && userLevel() < 3) {
+    return toast("Seul un Manager, Co-patron ou Patron peut annuler une commande.", false);
+  }
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+  const st = STATUS_BY_ID[statusId];
+
+  setBusy(true);
+  const res = await notifyStatusChangeDiscord(o, st);
+  const entry = { k: newKey("h"), status: statusId, at: Date.now(), notified: res.ok, by: fullName() };
+  try {
+    await store.setStatus(id, statusId, entry);
+    await refreshAll(true, true);
+    if (res.ok) toast(`${numLabel(o)} → ${st.icon} ${st.label} (Discord notifié ✅)`, true);
+    else toast(`${numLabel(o)} → ${st.label} (Statut mis à jour, erreur Discord : ${res.error})`, false);
+  } catch (e) {
+    toast("Erreur de sauvegarde : " + e.message, false);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function handleOrderAssign(id, mode) {
+  await refreshAll(true);
+  const lvl = userLevel();
+  if (lvl < 2) return toast("Les recrues ne peuvent pas prendre en charge de commande.", false);
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+
+  let targetName = fullName();
+  /* Une commande prise en duo est réservée aux deux employés (ou à un Manager+) */
+  if (isDuoOrder(o) && lvl < 3 && !isDuoMember()) {
+    return toast("Cette commande est réservée au duo " + DUO_LABEL + ".", false);
+  }
+  if (mode === "self" && isDuoOrder(o) && lvl < 3) {
+    return toast("Cette commande est déjà prise en duo (" + o.employee + ").", false);
+  }
+  if (mode === "duo") {
+    if (!canDuo()) return toast("Seuls " + DUO_LABEL.replace(" & ", " et ") + " peuvent utiliser le bouton duo.", false);
+    targetName = DUO_LABEL;
+  }
+  if (mode === "prompt") {
+    if (lvl < 3) return toast("Seul un Manager+ peut assigner un autre employé.", false);
+    const r = prompt(`Employé en charge de la commande ${numLabel(o)} :`, o.employee || fullName());
+    if (r === null) return;
+    targetName = r.trim().slice(0, 40);
+    if (!targetName) return toast("Le nom de l'employé est obligatoire.", false);
+  }
+
+  try {
+    await store.updateFields(id, { employee: targetName, updated: Date.now() });
+    await refreshAll(true, true);
+    toast(mode === "duo"
+      ? `Commande ${numLabel(o)} prise en duo par ${targetName} (salaire divisé par 2) ✅`
+      : `Commande ${numLabel(o)} prise en charge par ${targetName} ✅`, true);
+  } catch (e) {
+    toast("Impossible d'assigner : " + e.message, false);
+  }
+}
+
+async function editOrderDetails(id) {
+  await refreshAll(true);
+  if (userLevel() < 3) return toast("Réservé aux Managers et supérieurs.", false);
+  const o = orders.find(x => x.id === id);
+  if (!o) return;
+
+  const newAmount = prompt(`Modifier le montant total (€) de ${numLabel(o)} :`, o.amount ?? 0);
+  if (newAmount === null) return;
+  const parsedAmount = Number(String(newAmount).replace(",", "."));
+  if (!isFinite(parsedAmount) || parsedAmount < 0) return toast("Montant invalide.", false);
+
+  const newContent = prompt(`Modifier le contenu / note de ${numLabel(o)} :`, o.content || "");
+  if (newContent === null) return;
+
+  try {
+    await store.updateFields(id, { amount: parsedAmount, content: newContent.trim(), updated: Date.now() });
+    await refreshAll(true, true);
+    toast(`Commande ${numLabel(o)} modifiée ✅`, true);
+  } catch (e) {
+    toast("Modification impossible : " + e.message, false);
+  }
+}
+
+async function deleteOrder(id) {
+  await refreshAll(true);
+  if (userLevel() < 3) return toast("Seul un Manager+ peut supprimer une commande.", false);
+  const o = orders.find(x => x.id === id);
+  if (!o || !confirm(`Supprimer définitivement la commande ${numLabel(o)} (${o.company}) ?`)) return;
+  try {
+    await store.removeOrder(id);
+    await refreshAll(true, true);
+    toast(`Commande ${numLabel(o)} supprimée.`, true);
+  } catch (e) {
+    toast("Suppression impossible : " + e.message, false);
+  }
+}
+
+function statusButtonsHtml(o) {
+  const lvl = userLevel();
+  return STATUSES.map(s => {
+    const locked = (s.id === "cancelled" && lvl < 3);
+    return `
+      <button type="button" class="stbtn ${s.id === o.status ? "active" : ""}" style="--c:${s.css}"
+        data-act="status" data-id="${esc(o.id)}" data-status="${s.id}"
+        ${locked ? 'disabled title="Réservé aux Managers+"' : `title="Passer à ${esc(s.label)}"`}>
+        ${s.icon} ${esc(s.short)}
+      </button>`;
+  }).join("");
+}
+
+function renderDispatch() {
+  if (!isStaff()) return;
+  const lvl = userLevel();
+  const q = $("dispatchSearch").value.trim().toLowerCase();
+  const companyF = $("fCompanyFilter").value;
+
+  const base = orders.filter(o => !!o.archived === archiveMode && (!companyF || o.company === companyF));
+  /* Onglets « Commandes actives » et « Archive » avec compteurs */
+  const baseAll = orders.filter(o => !companyF || o.company === companyF);
+  const nActive = baseAll.filter(o => !o.archived).length;
+  const nArch = baseAll.filter(o => o.archived).length;
+  $("dispatchTabs").innerHTML =
+    `<button class="chip ${!archiveMode ? "active" : ""}" data-archtab="0">📋 Commandes actives<span class="n">${nActive}</span></button>` +
+    `<button class="chip ${archiveMode ? "active" : ""}" data-archtab="1">🗄️ Archive<span class="n">${nArch}</span></button>`;
+  $("dispatchHeading").textContent = archiveMode ? "Archive des commandes livrées" : "Dispatch des Commandes";
+  $("archiveDelivered").hidden = archiveMode || userLevel() < 3;
+  const count = (id) => base.filter(o => o.status === id).length;
+  /* Dans l'archive, seul le statut « Livrée » est proposé */
+  const shownStatuses = archiveMode ? STATUSES.filter(s => s.id === "delivered") : STATUSES;
+  if (archiveMode) filterStatus = "delivered";
+
+  $("chips").innerHTML =
+    (archiveMode ? "" : `<button class="chip ${filterStatus === "all" ? "active" : ""}" data-filter="all">Toutes<span class="n">${base.length}</span></button>`) +
+    shownStatuses.map(s => `<button class="chip ${filterStatus === s.id ? "active" : ""}" style="--c:${s.css}" data-filter="${s.id}">${s.icon} ${esc(s.short)}<span class="n">${count(s.id)}</span></button>`).join("");
+
+  const list = base.filter(o =>
+    (filterStatus === "all" || o.status === filterStatus) &&
+    (q === "" || `${numLabel(o)} ${o.company} ${o.contact || ""} ${o.content || ""} ${o.employee || ""}`.toLowerCase().includes(q))
+  );
+
+  $("dispatchTableView").hidden  = dispatchView !== "table"  || list.length === 0;
+  $("dispatchKanbanView").hidden = dispatchView !== "kanban" || list.length === 0;
+  $("dispatchCardsView").hidden  = dispatchView !== "cards"  || list.length === 0;
+
+  const empty = $("dispatchEmpty");
+  empty.hidden = list.length > 0;
+  empty.textContent = archiveMode
+    ? "Aucune commande archivée pour le moment."
+    : (orders.filter(o => !o.archived).length === 0
+      ? "Aucune commande active enregistrée pour le moment."
+      : "Aucune commande ne correspond à ces filtres.");
+
+  if (list.length === 0) return;
+
+  if (dispatchView === "table") {
+    $("dispatchTableView").innerHTML = `
+      <table class="dispatch-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Entreprise & Client</th>
+            <th>Date (Europe/Brussels)</th>
+            <th>Contenu détaillé</th>
+            <th>Montant</th>
+            <th>Statut</th>
+            <th>Assigné à</th>
+            <th>Actions RBAC</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${list.map(o => {
+            const st = STATUS_BY_ID[o.status] || STATUS_BY_ID.processing;
+            return `
+              <tr>
+                <td><b style="font-size:1rem;color:var(--accent)">${numLabel(o)}</b></td>
+                <td>
+                  <div class="o-company">${esc(o.company)}</div>
+                  ${o.contact ? `<div style="font-size:.78rem;color:var(--muted)">👤 ${esc(o.contact)}</div>` : ""}
+                  ${o.phone ? `<div style="font-size:.76rem;color:var(--muted)">📞 ${esc(o.phone)}</div>` : ""}
+                </td>
+                <td style="font-size:.8rem;color:var(--muted);white-space:nowrap">${esc(o.createdBrussels || fmtDateBrussels(o.created))}</td>
+                <td><div class="td-content">${o.content ? esc(o.content) : '<span style="color:var(--muted)">—</span>'}</div></td>
+                <td style="white-space:nowrap"><b class="price">${fmtMoney(o.amount)}</b></td>
+                <td>
+                  <span class="status-pill" style="--c:${st.css};margin-bottom:6px">${st.icon} ${esc(st.short)}</span>
+                  <div class="steps" style="margin-top:6px">${statusButtonsHtml(o)}</div>
+                </td>
+                <td>
+                  ${o.employee ? `<b>🧑‍💼 ${esc(o.employee)}</b>` : `<span style="color:var(--danger);font-weight:700">Non assigné</span>`}
+                  <div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px">
+                    ${lvl >= 2 ? `<button class="btn ghost sm" data-act="take" data-id="${esc(o.id)}">✋ Prendre</button>` : ""}
+                    ${lvl >= 3 ? `<button class="btn ghost sm" data-act="assign" data-id="${esc(o.id)}">✏️ Assigner</button>` : ""}
+                    ${duoBtnHtml(o, "btn ghost2 sm")}
+                  </div>
+                </td>
+                <td>
+                  <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+                    ${lvl >= 3 ? `<button class="link-btn" data-act="edit" data-id="${esc(o.id)}">✏️ Modifier</button>` : ""}
+                    ${lvl >= 3 && o.archived ? `<button class="link-btn" data-act="unarchive" data-id="${esc(o.id)}">↩️ Désarchiver</button>` : ""}
+                    ${lvl >= 3 ? `<button class="del-btn" data-act="delete" data-id="${esc(o.id)}">🗑️ Supprimer</button>` : `<span style="color:var(--muted);font-size:.75rem">Lecture / Statut</span>`}
+                  </div>
+                </td>
+              </tr>`;
+          }).join("")}
+        </tbody>
+      </table>`;
+  }
+
+  if (dispatchView === "kanban") {
+    $("dispatchKanbanView").innerHTML = shownStatuses.map(st => {
+      const colOrders = list.filter(o => o.status === st.id);
+      return `
+        <div class="kanban-col" style="--c:${st.css}">
+          <div class="kanban-head">
+            <span>${st.icon} ${esc(st.short)}</span>
+            <span class="pill" style="padding:2px 8px;font-size:.75rem">${colOrders.length}</span>
+          </div>
+          ${colOrders.map(o => `
+            <div class="kanban-card" style="--c:${st.css}">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <b>${numLabel(o)} · <span style="color:var(--sell)">${esc(o.company)}</span></b>
+                <span class="price">${fmtMoney(o.amount)}</span>
+              </div>
+              ${o.contact ? `<div style="color:var(--muted);font-size:.76rem">👤 ${esc(o.contact)} ${o.phone ? "· 📞 " + esc(o.phone) : ""}</div>` : ""}
+              <div style="white-space:pre-wrap;font-size:.78rem;background:var(--panel);padding:6px 8px;border-radius:6px;max-height:110px;overflow-y:auto">${esc(o.content || "—")}</div>
+              <div style="font-size:.76rem;color:var(--muted)">🕒 ${esc(o.createdBrussels || fmtDateBrussels(o.created))}</div>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:.78rem">
+                <span>🧑‍💼 <b>${o.employee ? esc(o.employee) : "Non assigné"}</b></span>
+                ${lvl >= 2 ? `<button class="link-btn" data-act="take" data-id="${esc(o.id)}">Prendre</button>` : ""}
+                ${duoBtnHtml(o, "link-btn")}
+              </div>
+              <div class="steps">${statusButtonsHtml(o)}</div>
+            </div>`).join("")}
+        </div>`;
+    }).join("");
+  }
+
+  if (dispatchView === "cards") {
+    $("dispatchCardsView").innerHTML = list.map(o => {
+      const st = STATUS_BY_ID[o.status] || STATUS_BY_ID.processing;
+      const hist = (o.history || []).slice().reverse().map(h => {
+        const s = STATUS_BY_ID[h.status] || { icon: "•", label: h.status };
+        const n = h.notified === true ? '<span class="ok">Discord OK</span>'
+                : h.notified === false ? '<span class="ko">Discord échoué</span>'
+                : "sans notif";
+        return `<li>${fmtDateBrussels(h.at)} — ${s.icon} ${esc(s.label)} · ${n}${h.by ? " · par " + esc(h.by) : ""}</li>`;
+      }).join("");
+
+      return `
+        <article class="order-card ${o.status === "cancelled" ? "cancelled" : ""}" style="--c:${st.css}">
+          <div class="o-head">
+            <span class="o-num">${numLabel(o)}</span>
+            <span class="o-company">${esc(o.company)}</span>
+            <span class="status-pill" style="--c:${st.css}">${st.icon} ${esc(st.label)}</span>
+            <span class="o-date">Créée le ${esc(o.createdBrussels || fmtDateBrussels(o.created))}${o.by ? " par " + esc(o.by) : ""}</span>
+          </div>
+          <div class="o-body">
+            <div>
+              ${o.contact ? `<div style="margin-bottom:6px;font-weight:600">👤 Client : ${esc(o.contact)} ${o.phone ? `· 📞 ${esc(o.phone)}` : ""}</div>` : ""}
+              <div class="o-items">${o.content ? esc(o.content) : "Aucun détail d'articles"}</div>
+            </div>
+            <div class="o-amount">${fmtMoney(o.amount)}</div>
+            <div class="o-emp ${o.employee ? "" : "none"}">
+              🧑‍💼 Employé en charge : <b>${o.employee ? esc(o.employee) : "non assigné"}</b>
+              ${lvl >= 2 ? `<button type="button" class="link-btn" data-act="take" data-id="${esc(o.id)}">✋ Prendre en charge</button>` : ""}
+              ${lvl >= 3 ? `<button type="button" class="link-btn" data-act="assign" data-id="${esc(o.id)}">✏️ Assigner quelqu'un</button>` : ""}
+              ${duoBtnHtml(o, "link-btn")}
+            </div>
+          </div>
+          <div class="steps">${statusButtonsHtml(o)}</div>
+          <details class="hist"><summary>Historique (${(o.history || []).length})</summary><ul>${hist}</ul></details>
+          ${lvl >= 3 ? `
+            <div class="o-actions">
+              <button type="button" class="link-btn" data-act="edit" data-id="${esc(o.id)}">✏️ Modifier la commande</button>
+              ${o.archived ? `<button type="button" class="link-btn" data-act="unarchive" data-id="${esc(o.id)}">↩️ Désarchiver</button>` : ""}
+              <button type="button" class="del-btn" data-act="delete" data-id="${esc(o.id)}">🗑️ Supprimer la commande</button>
+            </div>` : ""}
+        </article>`;
+    }).join("");
+  }
+}
+
+/* ==============================================================
+   9) ESPACE CLIENT, STATS & GESTION DES RÔLES (PATRON & CO-PATRON)
+   ============================================================== */
+function renderMyOrders() {
+  if (!hasSiteAccess()) return;
+  const isStaffMember = isStaff();
+  const myOrders = orders.filter(o =>
+    o.userId === currentUser.id ||
+    (currentUser.type === "client" && currentUser.company && o.company === currentUser.company)
+  );
+
+  $("myOrdersSubtitle").textContent = isStaffMember
+    ? `Commandes passées avec ton profil (${fullName()})`
+    : `Entreprise attribuée : ${currentUser.company} · Client : ${fullName()}`;
+
+  $("myOrdersEmpty").hidden = myOrders.length > 0;
+  $("myOrdersList").innerHTML = myOrders.map(o => {
+    const st = STATUS_BY_ID[o.status] || STATUS_BY_ID.processing;
+    return `
+      <article class="order-card" style="--c:${st.css}">
+        <div class="o-head">
+          <span class="o-num">${numLabel(o)}</span>
+          <span class="o-company">${esc(o.company)}</span>
+          <span class="status-pill" style="--c:${st.css}">${st.icon} ${esc(st.label)}</span>
+          <span class="o-date">Passée le ${esc(o.createdBrussels || fmtDateBrussels(o.created))}</span>
+        </div>
+        <div class="o-body">
+          <div class="o-items">${esc(o.content || "—")}</div>
+          <div class="o-amount">${fmtMoney(o.amount)}</div>
+          <div class="o-emp">🧑‍💼 Employé Go Postal en charge : <b>${o.employee ? esc(o.employee) : "En attente d'assignation"}</b></div>
+        </div>
+      </article>`;
+  }).join("");
+}
+
+function renderStats() {
+  if (!isBoss()) return;
+  const valid = orders.filter(o => o.status !== "cancelled");
+  const totalRev = valid.reduce((s, o) => s + (Number(o.amount) || 0), 0);
+  const delivered = orders.filter(o => o.status === "delivered").length;
+  const active = orders.filter(o => ["pending", "processing", "done", "shipping"].includes(o.status)).length;
+
+  // Salaire total : 15 % du montant de chaque livraison effectuée
+  const SALARY_RATE = 0.15;
+  const deliveredTotal = orders.filter(o => o.status === "delivered" && !o.archived).reduce((s, o) => s + (Number(o.amount) || 0), 0);
+  const totalSalary = deliveredTotal * SALARY_RATE;
+
+  $("statsKpis").innerHTML = `
+    <div class="kpi"><div class="k-label">Chiffre d'affaires (hors annulées)</div><div class="k-val price">${fmtMoney(totalRev)}</div></div>
+    <div class="kpi"><div class="k-label">Commandes totales</div><div class="k-val">${orders.length}</div></div>
+    <div class="kpi"><div class="k-label">Commandes en cours</div><div class="k-val" style="color:var(--accent)">${active}</div></div>
+    <div class="kpi"><div class="k-label">Livraisons effectuées</div><div class="k-val" style="color:var(--teal)">${delivered}</div></div>
+    <div class="kpi"><div class="k-label">Salaire à verser (15 % des livraisons effectuées non archivées)</div><div class="k-val price">${fmtMoney(totalSalary)}</div></div>
+  `;
+
+  const byComp = {};
+  valid.forEach(o => {
+    if (!byComp[o.company]) byComp[o.company] = { count: 0, total: 0 };
+    byComp[o.company].count++;
+    byComp[o.company].total += Number(o.amount) || 0;
+  });
+  const compRows = Object.entries(byComp).sort((a, b) => b[1].total - a[1].total);
+  $("statsByCompany").innerHTML = compRows.length === 0 ? `<div class="empty">Aucune donnée</div>` :
+    compRows.map(([nom, d]) => `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">
+        <span><b>${esc(nom)}</b> <small style="color:var(--muted)">(${d.count} cmd)</small></span>
+        <span class="price">${fmtMoney(d.total)}</span>
+      </div>`).join("");
+
+  const byEmp = {};
+  valid.forEach(o => {
+    /* Commande en duo : le montant (donc le salaire) est divisé à parts égales entre les employés */
+    const names = employeesOf(o);
+    const list = names.length ? names : ["Non assigné"];
+    const share = (Number(o.amount) || 0) / list.length;
+    list.forEach(emp => {
+      if (!byEmp[emp]) byEmp[emp] = { count: 0, total: 0, delivered: 0 };
+      byEmp[emp].count++;
+      byEmp[emp].total += share;
+      if (o.status === "delivered" && !o.archived) byEmp[emp].delivered += share; /* archivée = décomptée du salaire */
+    });
+  });
+  const empRows = Object.entries(byEmp).sort((a, b) => b[1].count - a[1].count);
+  $("statsByEmployee").innerHTML = empRows.length === 0 ? `<div class="empty">Aucune donnée</div>` :
+    empRows.map(([nom, d]) => `
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 14px;padding:8px 0;border-bottom:1px solid var(--border);font-size:.9rem">
+        <span>🧑‍💼 <b>${esc(nom)}</b></span>
+        <span><b>${d.count}</b> prise(s) en charge · <span class="price">${fmtMoney(d.total)}</span>${nom === "Non assigné" ? "" : ` · 💶 salaire : <b style="color:var(--accent-2)">${fmtMoney(d.delivered * SALARY_RATE)}</b> <button type="button" class="btn ghost2 sm" data-send-salary="${esc(nom)}" data-salary="${d.delivered * SALARY_RATE}">💸 Notifier le salaire</button>`}</span>
+      </div>`).join("");
+}
+
+/* Administration des Comptes et Rôles par le Patron ET le Co-patron */
+function renderStaffAdmin() {
+  if (!isBoss()) return;
+
+  const sortedUsers = users.slice().sort((a, b) => Number(a.validated) - Number(b.validated));
+
+  $("adminUsersTable").innerHTML = sortedUsers.map(u => {
+    const currentVal = u.type === "client" ? `company:${u.company}` : `staff:${u.role}`;
+    return `
+      <tr>
+        <td><b>${esc(u.username)}</b></td>
+        <td>${esc(u.firstName)} ${esc(u.lastName)}</td>
+        <td>${esc(u.phone || "—")}</td>
+        <td>
+          ${u.validated
+            ? `<span class="role-badge role-employe">✅ Actif / Validé</span>`
+            : `<span class="role-badge role-pending">⛔ Bloqué (En attente / Suspendu)</span>`}
+        </td>
+        <td>
+          ${u.type === "staff"
+            ? roleBadgeHtml(u.role, u.validated)
+            : `<span class="role-badge role-client">🏢 ${esc(u.company)}</span>`}
+        </td>
+        <td>
+          <select data-assign-user="${esc(u.id)}" style="padding:6px 10px;font-size:.82rem;max-width:260px">
+            <optgroup label="🛡️ Grades Staff Go Postal">
+              <option value="staff:recrue" ${currentVal === "staff:recrue" ? "selected" : ""}>Recrue</option>
+              <option value="staff:employe" ${currentVal === "staff:employe" ? "selected" : ""}>Employé</option>
+              <option value="staff:manager" ${currentVal === "staff:manager" ? "selected" : ""}>Manager</option>
+              <option value="staff:copatron" ${currentVal === "staff:copatron" ? "selected" : ""}>Co-patron</option>
+              <option value="staff:patron" ${currentVal === "staff:patron" ? "selected" : ""}>Patron</option>
+            </optgroup>
+            <optgroup label="🏢 Rôles Entreprises & Clients">
+              ${COMPANIES.map(c => `
+                <option value="company:${esc(c.nom)}" ${currentVal === `company:${c.nom}` ? "selected" : ""}>
+                  Entreprise — ${esc(c.nom)}
+                </option>`).join("")}
+            </optgroup>
+          </select>
+        </td>
+        <td>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            ${!u.validated
+              ? `<button class="btn success sm" data-validate-user="${esc(u.id)}" type="button">✅ Valider l'accès</button>`
+              : (u.id !== currentUser.id ? `<button class="btn ghost danger-outline sm" data-unvalidate-user="${esc(u.id)}" type="button">⛔ Suspendre</button>` : "")}
+            ${u.id !== currentUser.id
+              ? `<button class="del-btn" data-del-user="${esc(u.id)}" type="button">🗑️ Supprimer</button>`
+              : `<span style="color:var(--muted);font-size:.75rem">Session active</span>`}
+          </div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+/* Page Hiérarchie (affiche uniquement les membres du Staff validés) */
+function renderHierarchy() {
+  if (!hasSiteAccess()) return;
+  const initials = (n) => n.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join("");
+  const staffUsers = users.filter(u => u.type === "staff" && u.validated);
+  const tiers = [
+    staffUsers.filter(u => u.role === "patron" || u.role === "copatron"),
+    staffUsers.filter(u => u.role === "manager"),
+    staffUsers.filter(u => u.role === "employe" || u.role === "recrue")
+  ].filter(tier => tier.length > 0);
+
+  if (tiers.length === 0) {
+    $("staff").innerHTML = `<div class="empty">Aucun membre du Staff validé pour le moment.</div>`;
+    return;
+  }
+
+  $("staff").innerHTML = tiers.map(level =>
+    `<div class="level">${level.map(m => `
+      <div class="member">
+        <div class="avatar">${esc(initials(fullName(m)))}</div>
+        <div class="mname">${esc(fullName(m))}</div>
+        <div class="mrole">${roleBadgeHtml(m.role, true)}</div>
+      </div>`).join("")}</div>`
+  ).join('<div class="vline"></div>');
+}
+
+/* ==============================================================
+   10) ROUTEUR DE PAGES & VERROUILLAGE TOTAL SI NON VALIDÉ / SUPPRIMÉ
+   ============================================================== */
+const PAGES = ["accueil", "auth", "catalogue", "mes-commandes", "dispatch", "stats-globales", "staff-admin", "hierarchie"];
+let currentPage = "auth";
+
+function renderCurrentPage() {
+  if (!hasSiteAccess()) return;
+  if (currentPage === "catalogue") renderCatalog();
+  if (currentPage === "mes-commandes") renderMyOrders();
+  if (currentPage === "dispatch") renderDispatch();
+  if (currentPage === "stats-globales") renderStats();
+  if (currentPage === "staff-admin") renderStaffAdmin();
+  if (currentPage === "hierarchie") renderHierarchy();
+}
+
+function showPage() {
+  const rawHash = (location.hash || "#accueil").slice(1);
+  let target = PAGES.includes(rawHash) ? rawHash : "accueil";
+
+  // Verrouillage strict : si pas de compte actif & validé, AUCUNE page du site n'est accessible à part #auth
+  if (!hasSiteAccess()) {
+    target = "auth";
+    if (location.hash !== "#auth") {
+      history.replaceState(null, "", "#auth");
+    }
+  } else {
+    if (target === "auth") {
+      target = isStaff() ? "dispatch" : "catalogue";
+      history.replaceState(null, "", "#" + target);
+    }
+    if (target === "dispatch" && !isStaff()) {
+      toast("⛔ Accès refusé : l'espace Dispatch est strictement réservé au Staff Go Postal.", false);
+      location.hash = "#catalogue";
+      return;
+    }
+    if (target === "stats-globales" && !isBoss()) {
+      toast("⛔ Accès réservé au Co-patron et au Patron.", false);
+      location.hash = "#accueil";
+      return;
+    }
+    if (target === "staff-admin" && !isBoss()) {
+      toast("⛔ Accès réservé au Patron et au Co-patron.", false);
+      location.hash = "#accueil";
+      return;
+    }
+  }
+
+  currentPage = target;
+  PAGES.forEach(p => $("page-" + p).hidden = (p !== currentPage));
+  document.querySelectorAll("#mainnav a[data-page]").forEach(a => a.classList.toggle("active", a.dataset.page === currentPage));
+  $("catFooter").hidden = currentPage !== "catalogue" || !hasSiteAccess();
+  $("tabs").hidden = currentPage !== "catalogue" || !hasSiteAccess();
+  $("controls").hidden = currentPage !== "catalogue" || activeTab === "overview" || !hasSiteAccess();
+
+  window.scrollTo({ top: 0 });
+  renderCurrentPage();
+}
+
+window.addEventListener("hashchange", showPage);
+
+/* ==============================================================
+   11) ÉVÉNEMENTS GLOBAUX
+   ============================================================== */
+document.addEventListener("click", async (ev) => {
+  const maintenanceBtn = ev.target.closest("#maintenanceToggle");
+  if (maintenanceBtn) {
+    if (!isBoss()) return toast("Action réservée au Patron et au Co-patron.", false);
+    const next = !maintenanceEnabled;
+    const promptText = next
+      ? "Activer la maintenance ? Tous les comptes non-dirigeants connectés seront bloqués jusqu'à sa désactivation."
+      : "Désactiver la maintenance et réouvrir le site ?";
+    if (!confirm(promptText)) return;
+    maintenanceBtn.disabled = true;
+    try {
+      await setMaintenanceState(next);
+      toast(next ? "Mode maintenance activé pour le site entier." : "Maintenance désactivée : le site est de nouveau accessible.", true);
+    } catch (err) { toast("Impossible de modifier la maintenance : " + err.message, false); }
+    finally { maintenanceBtn.disabled = false; }
+    return;
+  }
+  if (ev.target.closest("#maintenanceRetry")) {
+    await loadMaintenanceState();
+    toast(maintenanceEnabled ? "Le site est toujours en maintenance." : "Le site est de nouveau disponible.", !maintenanceEnabled);
+    return;
+  }
+
+  // Catalogue : boutons + / -
+  const act = ev.target.closest("[data-act]");
+  if (act && act.closest("#page-catalogue")) {
+    const key = act.closest("[data-key]").dataset.key;
+    setQty(key, (cart[key] || 0) + (act.dataset.act === "inc" ? 1 : -1));
+    return;
+  }
+
+  // Catalogue : retirer une ligne du panier
+  const rm = ev.target.closest("[data-remove]");
+  if (rm) { setQty(rm.dataset.remove, 0); return; }
+
+  // Catalogue : changement d'onglet de point
+  const tabEl = ev.target.closest("[data-tab]");
+  if (tabEl) {
+    const targetTab = tabEl.dataset.tab;
+    if (targetTab !== "overview" && targetTab !== "all" && !canAccessPoint(targetTab)) {
+      return toast("Accès restreint à cette catégorie.", false);
+    }
+    activeTab = targetTab;
+    window.scrollTo({ top: 0 });
+    renderCatalog();
+    return;
+  }
+
+  // Salaires : notification Discord avec le nom de l'employé et le montant calculé
+  const salaryBtn = ev.target.closest("[data-send-salary]");
+  if (salaryBtn) {
+    if (!isBoss()) return toast("Réservé au Patron et au Co-patron.", false);
+    const employeeName = salaryBtn.dataset.sendSalary;
+    const salaryAmount = Number(salaryBtn.dataset.salary);
+    if (!employeeName || !Number.isFinite(salaryAmount)) return toast("Informations de salaire invalides.", false);
+    const url = DISCORD_SALAIRES_WEBHOOK_URL.trim();
+    if (!WEBHOOK_RE.test(url)) return toast("Aucun webhook Discord salaires configuré.", false);
+    try {
+      await postWebhook(url, {
+        username: SITE_NAME,
+        embeds: [{
+          title: "💸 Notification de salaire",
+          color: 0xFF7A1A,
+          fields: [
+            { name: "🧑‍💼 Employé", value: employeeName, inline: true },
+            { name: "💶 Salaire à verser", value: "**" + fmtMoney(salaryAmount) + "**", inline: true },
+            { name: "📊 Calcul", value: "15 % du montant des commandes livrées (non archivées) attribuées à cet employé.", inline: false }
+          ],
+          timestamp: new Date().toISOString(),
+          footer: { text: SITE_NAME + " · Salaires" }
+        }]
+      });
+      toast("Notification de salaire envoyée sur Discord ✅", true);
+    } catch (err) { toast("Envoi du salaire impossible : " + err.message, false); }
+    return;
+  }
+
+  // Archive des commandes livrées
+  const archTab = ev.target.closest("[data-archtab]");
+  if (archTab) {
+    archiveMode = archTab.dataset.archtab === "1";
+    filterStatus = "all";
+    renderDispatch();
+    return;
+  }
+  if (ev.target.closest("#archiveDelivered")) {
+    if (userLevel() < 3) return toast("Action réservée aux Managers et supérieurs.", false);
+    const delivered = orders.filter(o => o.status === "delivered" && !o.archived);
+    if (!delivered.length) return toast("Aucune commande livrée à archiver.", false);
+    if (!confirm("Archiver " + delivered.length + " commande(s) livrée(s) ? Elles resteront consultables dans l’onglet Archive.")) return;
+    try {
+      for (const o of delivered) await store.updateFields(o.id, { archived: true, archivedAt: Date.now(), updated: Date.now() });
+      await refreshAll(true, true);
+      archiveMode = true;
+      filterStatus = "all";
+      renderDispatch();
+      toast(delivered.length + " commande(s) déplacée(s) dans l’archive ✅", true);
+    } catch (err) { toast("Archivage impossible : " + err.message, false); }
+    return;
+  }
+
+  // Dispatch : filtres par statut
+  const f = ev.target.closest("[data-filter]");
+  if (f) { filterStatus = f.dataset.filter; renderDispatch(); return; }
+
+  // Dispatch : changement de vue (Tableau / Kanban / Cartes)
+  const vBtn = ev.target.closest("#viewSwitch button[data-view]");
+  if (vBtn) {
+    dispatchView = vBtn.dataset.view;
+    document.querySelectorAll("#viewSwitch button").forEach(b => b.classList.toggle("active", b === vBtn));
+    renderDispatch();
+    return;
+  }
+
+  // Dispatch : actions sur une commande
+  if (act && act.closest("#page-dispatch")) {
+    const id = act.dataset.id;
+    if (act.dataset.act === "status") changeOrderStatus(id, act.dataset.status);
+    if (act.dataset.act === "take")   handleOrderAssign(id, "self");
+    if (act.dataset.act === "assign") handleOrderAssign(id, "prompt");
+    if (act.dataset.act === "duo")    handleOrderAssign(id, "duo");
+    if (act.dataset.act === "edit")   editOrderDetails(id);
+    if (act.dataset.act === "delete") deleteOrder(id);
+    if (act.dataset.act === "unarchive") {
+      if (userLevel() < 3) return toast("Action réservée aux Managers et supérieurs.", false);
+      try {
+        await store.updateFields(id, { archived: false, archivedAt: null, updated: Date.now() });
+        await refreshAll(true, true);
+        toast("Commande remise dans les commandes actives ✅", true);
+      } catch (err) { toast("Désarchivage impossible : " + err.message, false); }
+    }
+    return;
+  }
+
+  // Admin Patron / Co-patron : Valider un compte en 1 clic
+  const valBtn = ev.target.closest("[data-validate-user]");
+  if (valBtn && isBoss()) {
+    const uid = valBtn.dataset.validateUser;
+    const u = users.find(x => x.id === uid);
+    if (u) {
+      u.validated = true;
+      await store.saveUser(u);
+      await refreshAll(true, true);
+      toast(`Compte de ${fullName(u)} validé ✅`, true);
+    }
+    return;
+  }
+
+  // Admin Patron / Co-patron : Suspendre un compte (éjection instantanée de la cible)
+  const unvalBtn = ev.target.closest("[data-unvalidate-user]");
+  if (unvalBtn && isBoss()) {
+    const uid = unvalBtn.dataset.unvalidateUser;
+    const u = users.find(x => x.id === uid);
+    if (u && confirm(`Suspendre immédiatement l'accès au site pour ${fullName(u)} ?`)) {
+      u.validated = false;
+      await store.saveUser(u);
+      await refreshAll(true, true);
+      toast(`Compte de ${fullName(u)} suspendu — son accès au site est coupé ✅`, true);
+    }
+    return;
+  }
+
+  // Admin Patron / Co-patron : Supprimer un utilisateur (éjection instantanée de la cible)
+  const delU = ev.target.closest("[data-del-user]");
+  if (delU && isBoss()) {
+    const uid = delU.dataset.delUser;
+    const u = users.find(x => x.id === uid);
+    if (u && confirm(`Supprimer définitivement le compte de ${fullName(u)} (${u.username}) ? Son accès sera coupé instantanément.`)) {
+      await store.deleteUser(uid);
+      await refreshAll(true, true);
+      toast("Compte supprimé et accès coupé.", true);
+    }
+    return;
+  }
+});
+
+// Changement direct d'une quantité ou attribution d'un rôle/entreprise par Patron/Co-patron
+document.addEventListener("change", async (ev) => {
+  if (ev.target.matches("input.qty")) {
+    setQty(ev.target.closest("[data-key]").dataset.key, ev.target.value);
+    return;
+  }
+
+  if (ev.target.matches("[data-assign-user]") && isBoss()) {
+    const uid = ev.target.dataset.assignUser;
+    const val = ev.target.value;
+    const u = users.find(x => x.id === uid);
+    if (!u) return;
+
+    if (val.startsWith("staff:")) {
+      const roleId = val.slice(6);
+      u.type = "staff";
+      u.role = roleId;
+      u.company = "Go Postal";
+      u.validated = true;
+      await store.saveUser(u);
+      if (currentUser && currentUser.id === u.id) saveSession(u);
+      await refreshAll(true, true);
+      toast(`${fullName(u)} est maintenant ${ROLES[roleId].label} (Validé ✅)`, true);
+    } else if (val.startsWith("company:")) {
+      const compName = val.slice(8);
+      u.type = "client";
+      u.role = "client";
+      u.company = compName;
+      u.validated = true;
+      await store.saveUser(u);
+      if (currentUser && currentUser.id === u.id) saveSession(u);
+      await refreshAll(true, true);
+      toast(`${fullName(u)} est maintenant affecté à l'entreprise « ${compName} » (Validé ✅)`, true);
+    }
+  }
+});
+
+// Authentification : Connexion (Bloquée si compte non validé ou suspendu)
+$("loginForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  await refreshAll(true);
+  const uname = $("loginUser").value.trim().toLowerCase();
+  const pass = $("loginPass").value;
+  const found = users.find(u => u.username.toLowerCase() === uname && u.password === pass);
+  if (!found) {
+    return toast("Identifiant ou mot de passe incorrect (ou compte supprimé).", false);
+  }
+  $("loginPass").value = "";
+
+  if (!found.validated) {
+    saveSession(null);
+    const lockBox = $("authLockNotice");
+    lockBox.hidden = false;
+    lockBox.innerHTML = `⏳ Salut ${esc(fullName(found))}, ton compte est actuellement suspendu ou en attente de validation par le Patron ou le Co-patron. Tu n'as pas accès au site tant qu'il n'est pas validé.<br><b>⚠️ Pense à bien mettre tes identifiants sur le Discord.</b>`;
+    return toast("Accès refusé : compte en attente de validation ou suspendu.", false);
+  }
+
+  $("authLockNotice").hidden = true;
+  saveSession(found);
+  toast(`Bienvenue ${fullName(found)} !`, true);
+  location.hash = found.type === "staff" ? "#dispatch" : "#catalogue";
+  showPage();
+});
+
+// Authentification : Inscription (Créé en Recrue non validée, sauf si la base est 100% vide -> 1er compte = Patron)
+$("registerForm").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  await refreshAll(true);
+
+  const username = $("regUser").value.trim().toLowerCase();
+  const password = $("regPass").value;
+  const firstName = $("regFirst").value.trim();
+  const lastName = $("regLast").value.trim();
+  const phone = $("regPhone").value.trim();
+
+  if (users.some(u => u.username.toLowerCase() === username)) {
+    return toast("Cet identifiant est déjà utilisé.", false);
+  }
+
+  const isFirstAccountEver = users.length === 0;
+
+  const newUser = {
+    id: newKey("u_"),
+    username,
+    password,
+    type: "staff",
+    role: isFirstAccountEver ? "patron" : "recrue",
+    firstName,
+    lastName,
+    company: "Go Postal",
+    phone,
+    validated: isFirstAccountEver // Seul le tout 1er compte d'une base vide est auto-validé Patron
+  };
+
+  await store.saveUser(newUser);
+  $("registerForm").reset();
+
+  if (isFirstAccountEver) {
+    $("authLockNotice").hidden = true;
+    saveSession(newUser);
+    toast(`Premier compte de la base créé : tu es Patron (${fullName(newUser)}) ✅`, true);
+    location.hash = "#staff-admin";
+    showPage();
+  } else {
+    saveSession(null);
+    const lockBox = $("authLockNotice");
+    lockBox.hidden = false;
+    lockBox.innerHTML = `⏳ Ton compte (${esc(fullName(newUser))}) a bien été créé et est <b>en attente d'autorisation</b>. Il doit maintenant être validé par le Patron ou le Co-patron avant que tu puisses accéder au site.<br><b>⚠️ Pense à bien mettre tes identifiants sur le Discord.</b>`;
+    toast("Compte créé ! En attente d'autorisation par le Patron ou le Co-patron.", true);
+    showPage();
+  }
+});
+
+// Filtres Catalogue & Dispatch
+["search", "sort"].forEach(id => $(id).addEventListener("input", renderItems));
+["dispatchSearch", "fCompanyFilter"].forEach(id => $(id).addEventListener("input", renderDispatch));
+$("send").addEventListener("click", submitCatalogOrder);
+$("clear").addEventListener("click", () => {
+  if (Object.keys(cart).length && !confirm("Vider toute la commande ?")) return;
+  Object.keys(cart).forEach(k => delete cart[k]);
+  $("status").hidden = true;
+  renderCatalog();
+});
+$("fab").addEventListener("click", () => $("order").scrollIntoView({ behavior: "smooth" }));
+
+// Export / Import JSON dans le Dispatch
+$("exportBtn").addEventListener("click", () => {
+  const blob = new Blob([JSON.stringify({ orders, users }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "gopostal-sauvegarde-" + new Date().toISOString().slice(0, 10) + ".json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async () => {
+  const file = $("importFile").files[0];
+  $("importFile").value = "";
+  if (!file) return;
+  try {
+    const d = JSON.parse(await file.text());
+    if (!d || !Array.isArray(d.orders)) throw new Error("fichier invalide");
+    const n = await store.addMissing(d.orders);
+    await refreshAll(true, true);
+    toast(`${n} commande(s) importée(s) ✅`, true);
+  } catch (e) { toast("Import impossible : " + e.message, false); }
+});
+
+function updatePhoneRequirement() {
+  const isPrivate = selectedCompanyObj()?.nom === "Particulier";
+  $("phoneGroup").hidden = !isPrivate;
+  $("phone").required = isPrivate;
+}
+$("company").addEventListener("change", () => {
+  updatePhoneRequirement();
+  purgeRestrictedCartItems();
+  renderCatalog();
+});
+
+/* ==============================================================
+   12) INITIALISATION AU DÉMARRAGE
+   ============================================================== */
+(async function init() {
+  $("brandName").textContent = SITE_NAME;
+  $("brandName2").textContent = SITE_NAME;
+  $("discordBtn").href = DISCORD_INVITE_URL;
+  $("heroDiscord").href = DISCORD_INVITE_URL;
+  $("stats").textContent = `${ENTRIES.length} items · ${POINTS.length} points de vente`;
+  $("modeNote").textContent = SHARED
+    ? "Base Firebase partagée active (vérification des accès toutes les 2,5 s)."
+    : "Mode localStorage uniquement.";
+
+  // Peuplement des listes d'entreprises
+  $("company").innerHTML = '<option value="">— Choisis ton entreprise —</option>' +
+    COMPANIES.map((c, i) => `<option value="${i}">${esc(c.nom)}</option>`).join("");
+  const compNameOptions = COMPANIES.map(c => `<option value="${esc(c.nom)}">${esc(c.nom)}</option>`).join("");
+  $("fCompanyFilter").innerHTML = '<option value="">Toutes les entreprises</option>' + compNameOptions;
+
+  users = loadLocalUsers();
+  loadSession();
+  await loadMaintenanceState();
+
+  updatePhoneRequirement();
+  applyRBAC();
+  setSync(SHARED ? "loading" : true);
+  showPage();
+
+  await refreshAll(true, true);
+  showPage();
+
+  if (SHARED) {
+    // Polling rapide (2.5 s) pour éjecter quasi instantanément tout compte supprimé ou suspendu
+    setInterval(() => {
+      if (!document.hidden && !busy) {
+        refreshAll(true);
+        loadMaintenanceState();
+      }
+    }, 2500);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) { refreshAll(true); loadMaintenanceState(); } });
+  }
+})();
+</script>
+
+<!-- ============================================================
+     ANIMATION DE TRANSITION ENTRE LES PAGES (ajout — code existant inchangé)
+     ============================================================ -->
+<style>
+  /* Barre de progression orange/bleue qui balaie le haut de l'écran */
+  #pageTransitionBar {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 9999;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--sell));
+    box-shadow: 0 0 12px rgba(255,138,31,.6);
+    transform: scaleX(0); transform-origin: left center; opacity: 0;
+    pointer-events: none;
+  }
+  #pageTransitionBar.run { animation: ptBar .7s cubic-bezier(.22,.8,.3,1) both; }
+  @keyframes ptBar {
+    0%   { transform: scaleX(0);  transform-origin: left center;  opacity: 1; }
+    60%  { transform: scaleX(1);  transform-origin: left center;  opacity: 1; }
+    61%  { transform: scaleX(1);  transform-origin: right center; opacity: 1; }
+    100% { transform: scaleX(0);  transform-origin: right center; opacity: 0; }
+  }
+
+  /* Entrée de la page : fondu + glissement + léger flou */
+  .page.page-enter { animation: ptPageIn .55s cubic-bezier(.22,.8,.3,1) both; }
+  @keyframes ptPageIn {
+    from { opacity: 0; transform: translateY(26px) scale(.985); filter: blur(6px); }
+    to   { opacity: 1; transform: none; filter: none; }
+  }
+
+  /* Apparition en cascade des blocs de la page */
+  .page.page-enter > * { animation: ptChildIn .6s cubic-bezier(.22,.8,.3,1) both; }
+  .page.page-enter > *:nth-child(1) { animation-delay: .04s; }
+  .page.page-enter > *:nth-child(2) { animation-delay: .10s; }
+  .page.page-enter > *:nth-child(3) { animation-delay: .16s; }
+  .page.page-enter > *:nth-child(4) { animation-delay: .22s; }
+  .page.page-enter > *:nth-child(n+5) { animation-delay: .28s; }
+  @keyframes ptChildIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+</style>
+<script>
+(function () {
+  const bar = document.createElement("div");
+  bar.id = "pageTransitionBar";
+  document.body.appendChild(bar);
+
+  function play(page) {
+    page.classList.remove("page-enter");
+    void page.offsetWidth;                 // relance l'animation
+    page.classList.add("page-enter");
+    bar.classList.remove("run");
+    void bar.offsetWidth;
+    bar.classList.add("run");
+    clearTimeout(page._ptTimer);
+    page._ptTimer = setTimeout(() => page.classList.remove("page-enter"), 1000);
+  }
+
+  // Le routeur existant affiche/masque les pages via l'attribut "hidden" :
+  // on observe simplement l'apparition d'une page pour jouer l'animation.
+  const observer = new MutationObserver(muts => {
+    muts.forEach(m => { if (!m.target.hidden) play(m.target); });
+  });
+  document.querySelectorAll(".page").forEach(p =>
+    observer.observe(p, { attributes: true, attributeFilter: ["hidden"] })
+  );
+})();
+</script>
+
+<!-- ============================================================
+     ANIMATIONS DES BOUTONS & INTERFACE (ajout — code existant inchangé)
+     ============================================================ -->
+<script>
+(function () {
+  "use strict";
+  var reduce = false; /* animations toujours actives */
+  var byId = function (id) { return document.getElementById(id); };
+
+  /* 1) Onde au clic sur tous les boutons (la couleur suit celle du texte du bouton) */
+  var RIPPLE_SEL = ".btn, .tab, .chip, .stbtn, .view-switch button, .qtybox button, #fab, #mainnav a";
+  document.addEventListener("pointerdown", function (e) {
+    if (reduce || (e.button !== undefined && e.button > 0)) return;
+    var el = e.target && e.target.closest ? e.target.closest(RIPPLE_SEL) : null;
+    if (!el || el.disabled) return;
+    var r = el.getBoundingClientRect();
+    var size = Math.max(r.width, r.height) * 2.2;
+    var s = document.createElement("span");
+    s.className = "ripple";
+    s.style.width = s.style.height = size + "px";
+    s.style.left = (e.clientX - r.left - size / 2) + "px";
+    s.style.top = (e.clientY - r.top - size / 2) + "px";
+    el.appendChild(s);
+    var kill = function () { if (s.parentNode) s.parentNode.removeChild(s); };
+    s.addEventListener("animationend", kill, { once: true });
+    setTimeout(kill, 1000);
+  }, { passive: true });
+
+  /* 2) Curseur blanc qui glisse d'un onglet à l'autre (menu principal + vues du Dispatch) */
+  function makeSlider(container, itemSel) {
+    if (!container) return;
+    var ind = document.createElement("span");
+    ind.className = "slide-ind no-anim";
+    ind.setAttribute("aria-hidden", "true");
+    container.insertBefore(ind, container.firstChild);
+    var placedOnce = false, raf = 0;
+
+    function place() {
+      var act = container.querySelector(itemSel + ".active");
+      if (!act || container.hidden || act.offsetParent === null) {
+        ind.style.opacity = "0";
+        if (container.classList.contains("has-ind")) container.classList.remove("has-ind");
+        return;
+      }
+      if (!container.classList.contains("has-ind")) container.classList.add("has-ind");
+      ind.style.opacity = "1";
+      ind.style.width = act.offsetWidth + "px";
+      ind.style.height = act.offsetHeight + "px";
+      ind.style.transform = "translate(" + act.offsetLeft + "px," + act.offsetTop + "px)";
+      if (!placedOnce) {
+        placedOnce = true;
+        requestAnimationFrame(function () { requestAnimationFrame(function () { ind.classList.remove("no-anim"); }); });
+      }
+      if (container.scrollWidth > container.clientWidth + 2) {
+        container.scrollTo({ left: Math.max(0, act.offsetLeft - 24), behavior: reduce ? "auto" : "smooth" });
+      }
+    }
+    function schedule() { cancelAnimationFrame(raf); raf = requestAnimationFrame(place); }
+
+    /* On réagit aux changements de classe / hidden des éléments du menu (jamais à ceux du curseur ni du conteneur : pas de boucle) */
+    new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        if (muts[i].target !== ind && muts[i].target !== container) { schedule(); return; }
+      }
+    }).observe(container, { subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+
+    new MutationObserver(schedule).observe(container, { attributes: true, attributeFilter: ["hidden"] });
+    window.addEventListener("resize", schedule);
+    if (window.ResizeObserver) new ResizeObserver(schedule).observe(container);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+    schedule();
+  }
+  makeSlider(byId("mainnav"), "a");
+  makeSlider(byId("viewSwitch"), "button");
+
+  /* 3) Notification : l'animation d'entrée et la barre de temps repartent à chaque nouveau message */
+  var toastEl = byId("toast");
+  if (toastEl) {
+    new MutationObserver(function () {
+      if (toastEl.hidden) { if (toastEl.classList.contains("go")) toastEl.classList.remove("go"); return; }
+      if (!toastEl.classList.contains("go")) toastEl.classList.add("go");
+    }).observe(toastEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+  }
+
+  /* 4) Le total de la commande « tressaute » uniquement quand sa valeur change */
+  ["totalPrice", "totalQty"].forEach(function (id) {
+    var el = byId(id);
+    if (!el || reduce) return;
+    var last = el.textContent;
+    new MutationObserver(function () {
+      if (el.textContent === last) return;
+      last = el.textContent;
+      el.classList.remove("bump");
+      void el.offsetWidth;
+      el.classList.add("bump");
+      setTimeout(function () { el.classList.remove("bump"); }, 600);
+    }).observe(el, { childList: true, characterData: true, subtree: true });
+  });
+
+  /* 5) Onde bleue sur « Envoyer la commande » quand l'envoi réussit */
+  var statusEl = byId("status"), sendBtn = byId("send");
+  if (statusEl && sendBtn && !reduce) {
+    new MutationObserver(function () {
+      if (statusEl.hidden || !statusEl.classList.contains("ok")) return;
+      sendBtn.classList.remove("sent");
+      void sendBtn.offsetWidth;
+      sendBtn.classList.add("sent");
+      setTimeout(function () { sendBtn.classList.remove("sent"); }, 1300);
+    }).observe(statusEl, { childList: true, characterData: true, subtree: true, attributes: true, attributeFilter: ["class", "hidden"] });
+  }
+})();
+</script>
+<!-- ============================================================
+     RESTRICTIONS RECRUES + ONGLET MÉDICAL POUR L'ARMÉE (ajout — code existant inchangé)
+     - Les recrues ne peuvent plus changer le statut de livraison
+     - Les recrues ne voient pas les commandes Armée / Police Fédéral / Police Local / Médical (CHL-CHU)
+     - L'Armée accède à l'onglet Médical du catalogue
+     ============================================================ -->
+<style>
+  .stbtn[disabled] { opacity: .4; cursor: not-allowed; }
+</style>
+<script>
+(function () {
+  "use strict";
+
+  /* Entreprises dont les commandes sont invisibles pour les recrues (comparaison sans accents ni casse) */
+  var HIDDEN_FOR_RECRUES = ["armee", "police federal", "police federale", "police local", "police locale", "chl", "chu"];
+  var norm = function (s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase();
+  };
+  var isHiddenCompany = function (name) { return HIDDEN_FOR_RECRUES.indexOf(norm(name)) !== -1; };
+  var isRecrue = function () {
+    try { return hasSiteAccess() && userLevel() === 1; } catch (e) { return false; }
+  };
+
+  /* 1) L'Armée a aussi accès à l'onglet Médical du catalogue */
+  try {
+    var medList = CLIENT_POINT_RESTRICTIONS.medical;
+    if (medList && medList.indexOf("Armée") === -1) medList.push("Armée");
+  } catch (e) {}
+
+  /* 2) Les recrues ne peuvent pas changer le statut (blocage de l'action + boutons grisés) */
+  var origChangeStatus = window.changeOrderStatus;
+  if (typeof origChangeStatus === "function") {
+    window.changeOrderStatus = function () {
+      if (isRecrue()) {
+        toast("Les recrues ne peuvent pas modifier le statut de livraison.", false);
+        return Promise.resolve();
+      }
+      return origChangeStatus.apply(this, arguments);
+    };
+  }
+
+  var origStatusButtons = window.statusButtonsHtml;
+  if (typeof origStatusButtons === "function") {
+    window.statusButtonsHtml = function () {
+      var html = origStatusButtons.apply(this, arguments);
+      if (!isRecrue()) return html;
+      return html
+        .replace(/\sdisabled(?=[\s>])/g, "")
+        .replace(/<button type="button"/g, '<button type="button" disabled')
+        .replace(/data-act="status"/g, 'data-act="locked"')
+        .replace(/title="[^"]*"/g, 'title="Réservé aux Employés et supérieurs"');
+    };
+  }
+
+  /* 3) Les recrues ne voient pas les commandes des entreprises sensibles */
+  function syncCompanyFilter() {
+    var sel = document.getElementById("fCompanyFilter");
+    if (!sel) return;
+    if (!sel._fullHtml) sel._fullHtml = sel.innerHTML;
+    var mode = isRecrue() ? "recrue" : "full";
+    if (sel._mode === mode) return;
+    sel._mode = mode;
+    var cur = sel.value;
+    sel.innerHTML = sel._fullHtml;
+    if (mode === "recrue") {
+      Array.prototype.slice.call(sel.options).forEach(function (o) {
+        if (o.value && isHiddenCompany(o.value)) o.remove();
+      });
+    }
+    sel.value = Array.prototype.some.call(sel.options, function (o) { return o.value === cur; }) ? cur : "";
+  }
+
+  var origRenderCurrentPage = window.renderCurrentPage;
+  if (typeof origRenderCurrentPage === "function") {
+    window.renderCurrentPage = function () {
+      try {
+        syncCompanyFilter();
+        if (isRecrue() && Array.isArray(orders)) {
+          orders = orders.filter(function (o) { return !(o && isHiddenCompany(o.company)); });
+        }
+      } catch (e) {}
+      return origRenderCurrentPage.apply(this, arguments);
+    };
+    /* Rafraîchit l'affichage si une session est déjà ouverte (onglet Médical Armée) */
+    try { window.renderCurrentPage(); } catch (e) {}
+  }
+})();
+</script>
+
+<!-- ============================================================
+     ANTI-REFRESH PENDANT LA SAISIE DES QUANTITÉS (ajout — code existant inchangé)
+     Pendant que tu modifies une quantité, le catalogue n'est plus
+     reconstruit par la synchronisation automatique (toutes les 2,5 s).
+     La vérification des comptes suspendus/supprimés continue normalement.
+     ============================================================ -->
+<script>
+(function () {
+  "use strict";
+
+  /* Durée (ms) pendant laquelle on considère que tu es "en train" de régler
+     une quantité après un clic sur + ou − */
+  var GRACE_MS = 4000;
+
+  /* Horodatage de la dernière interaction avec une zone de quantité */
+  var lastQtyTouch = 0;
+
+  /* Vrai si le focus est dans un champ quantité */
+  function qtyFocused() {
+    var a = document.activeElement;
+    return !!(a && a.matches && a.matches("input.qty"));
+  }
+
+  /* Vrai si on est en train de régler une quantité */
+  function isEditingQty() {
+    return qtyFocused() || (Date.now() - lastQtyTouch < GRACE_MS);
+  }
+
+  /* Clic/toucher : dans une zone quantité => on note l'heure,
+     ailleurs (onglet, liste, bouton…) => on lève la protection.
+     Écouteur en phase de capture : il passe avant les autres. */
+  document.addEventListener("pointerdown", function (e) {
+    lastQtyTouch = (e.target.closest && e.target.closest(".qtybox")) ? Date.now() : 0;
+  }, true);
+
+  /* Chaque frappe dans un champ quantité prolonge la protection */
+  document.addEventListener("input", function (e) {
+    if (e.target.matches && e.target.matches("input.qty")) lastQtyTouch = Date.now();
+  }, true);
+
+  /* Enveloppe de renderCatalog : on saute la reconstruction pendant la saisie.
+     Les +/− et la validation mettent déjà à jour la carte et le panier
+     sur place (setQty), donc rien n'est perdu. */
+  var origRenderCatalog = window.renderCatalog;
+  if (typeof origRenderCatalog === "function") {
+    window.renderCatalog = function () {
+      if (isEditingQty()) return;
+      return origRenderCatalog.apply(this, arguments);
+    };
+  }
+})();
+</script>
+
+</body>
+</html>
