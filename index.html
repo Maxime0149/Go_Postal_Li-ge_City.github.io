@@ -4058,5 +4058,68 @@ $("company").addEventListener("change", () => {
 })();
 </script>
 
+<!-- ============================================================
+     FOND FLOU / BLUR D'ARRIÈRE-PLAN (ajout — code existant inchangé)
+     Deux calques fixes placés DERRIÈRE tout le contenu :
+       - body::before : halos orange et bleu fortement floutés
+       - body::after  : voile de grain léger pour adoucir le rendu
+     Pour régler l'effet, modifie uniquement les variables ci-dessous.
+     ============================================================ -->
+<style>
+  :root {
+    --bgblur-amount: 90px;      /* intensité du flou (plus grand = plus doux) */
+    --bgblur-opacity: .4;       /* visibilité des halos (0 à 1) */
+  }
+
+  /* Le body garde son fond noir ; on crée un contexte d'empilement propre */
+  body { position: relative; isolation: isolate; }
+
+  /* Halos de couleur floutés (orange = actions, bleu = information) */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: -15vmax;            /* déborde de l'écran pour que le flou n'ait pas de bords visibles */
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(46vmax 46vmax at 10% 16%, rgba(255,122,26,.95), transparent 70%),
+      radial-gradient(42vmax 42vmax at 90% 10%, rgba(61,139,255,.90), transparent 70%),
+      radial-gradient(48vmax 48vmax at 80% 90%, rgba(255,122,26,.75), transparent 70%),
+      radial-gradient(44vmax 44vmax at 14% 88%, rgba(61,139,255,.80), transparent 70%);
+    filter: blur(var(--bgblur-amount));
+    -webkit-filter: blur(var(--bgblur-amount));
+    opacity: var(--bgblur-opacity);
+    transform: translateZ(0);  /* force l'accélération GPU : défilement fluide */
+    animation: bgBlurDrift 28s ease-in-out infinite alternate;
+  }
+
+  /* Léger assombrissement par-dessus les halos pour garder la lisibilité */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(5,5,6,.2), rgba(5,5,6,.45));
+  }
+
+  /* Lente dérive des halos (très subtile) */
+  @keyframes bgBlurDrift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to   { transform: translate3d(2vmax, -2vmax, 0) scale(1.08); }
+  }
+
+  /* Respecte les préférences d'accessibilité : pas d'animation si demandé */
+  @media (prefers-reduced-motion: reduce) {
+    body::before { animation: none; }
+  }
+
+  /* Mobile : flou un peu réduit pour garder de bonnes performances */
+  @media (max-width: 720px) {
+    :root { --bgblur-amount: 60px; }
+  }
+
+</style>
+
 </body>
 </html>
